@@ -4,5 +4,5 @@ namespace Rezerv.Application.Interfaces;
 
 public interface IBookingService
 {
-    Task<BookingDto> CreateBookingAsync(CreateBookingDto dto);
+    Task<BookingDto> CreateBookingAsync(CreateBookingDto dto, Guid userId);
 }
