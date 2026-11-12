@@ -1,0 +1,34 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# VS Code
+.vscode/
+
+# .NET
+*.dll
+*.exe
+*.pdb
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+secrets.json
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

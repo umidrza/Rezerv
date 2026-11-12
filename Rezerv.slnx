@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Rezerv.API/Rezerv.API.csproj" />
+    <Project Path="src/Rezerv.Domain/Rezerv.Domain.csproj" />
+  </Folder>
+</Solution>
