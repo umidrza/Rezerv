@@ -21,4 +21,8 @@ public class Booking
     public BookingStatus Status { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public Hotel Hotel { get; set; } = null!;
+
+    public ICollection<BookingRoom> BookingRooms { get; set; } = new List<BookingRoom>();
 }

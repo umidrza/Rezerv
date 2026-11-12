@@ -13,4 +13,6 @@ public class Room
     public bool IsActive { get; set; } = true;
 
     public RoomType RoomType { get; set; } = null!;
+
+    public ICollection<BookingRoom> BookingRooms { get; set; } = new List<BookingRoom>();
 }

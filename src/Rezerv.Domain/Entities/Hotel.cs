@@ -18,24 +18,6 @@ public class Hotel
 
     public bool IsActive { get; set; } = true;
 
+    public ICollection<RoomType> RoomTypes { get; set; } = new List<RoomType>();
 
-    public Hotel(
-        string name,
-        string description,
-        string address,
-        string city,
-        string country,
-        int starRating)
-    {
-        Id = Guid.NewGuid();
-
-        Name = name;
-        Description = description;
-        Address = address;
-        City = city;
-        Country = country;
-        StarRating = starRating;
-
-        IsActive = true;
-    }
 }
