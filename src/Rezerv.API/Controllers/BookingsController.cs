@@ -56,4 +56,19 @@ public class BookingsController : ControllerBase
 
         return Ok(booking);
     }
+
+    [HttpPost("check-availability")]
+    public async Task<IActionResult> CheckRoomAvailability(CheckRoomAvailabilityDto dto)
+    {
+        try
+        {
+            var isAvailable = await _bookingService.CheckRoomAvailabilityAsync(dto);
+
+            return Ok(new { isAvailable });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

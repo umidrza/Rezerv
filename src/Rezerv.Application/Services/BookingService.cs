@@ -111,4 +111,29 @@ public class BookingService : IBookingService
             Status = booking.Status.ToString()
         };
     }
+
+    public async Task<bool> CheckRoomAvailabilityAsync(CheckRoomAvailabilityDto dto)
+    {
+        if (dto.CheckIn >= dto.CheckOut)
+            throw new ArgumentException("Check-out must be after check-in.");
+
+        if (dto.RoomIds == null || dto.RoomIds.Count == 0)
+            throw new ArgumentException("Select at least one room.");
+
+        if (dto.RoomIds.Distinct().Count() != dto.RoomIds.Count)
+            throw new ArgumentException("Duplicate room IDs are not allowed.");
+
+        var rooms = await _roomRepository.GetByIdsAsync(dto.RoomIds);
+
+        if (rooms.Count != dto.RoomIds.Count)
+            throw new ArgumentException("One or more rooms were not found.");
+
+        if (rooms.Any(r => !r.IsActive))
+            throw new ArgumentException("One or more rooms are inactive.");
+
+        return await _roomRepository.AreRoomsAvailableAsync(
+            dto.RoomIds,
+            DateTime.SpecifyKind(dto.CheckIn, DateTimeKind.Utc),
+            DateTime.SpecifyKind(dto.CheckOut, DateTimeKind.Utc));
+    }
 }
