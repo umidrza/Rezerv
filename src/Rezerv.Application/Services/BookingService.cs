@@ -1,4 +1,4 @@
-using Rezerv.Application.DTOs;
+using Rezerv.Application.DTOs.Booking;
 using Rezerv.Application.Interfaces;
 using Rezerv.Domain.Entities;
 using Rezerv.Domain.Enums;
@@ -80,6 +80,25 @@ public class BookingService : IBookingService
         };
 
         await _bookingRepository.AddAsync(booking);
+
+        return new BookingDto
+        {
+            Id = booking.Id,
+            HotelId = booking.HotelId,
+            CheckIn = booking.CheckIn,
+            CheckOut = booking.CheckOut,
+            NumberOfGuests = booking.NumberOfGuests,
+            TotalPrice = booking.TotalPrice,
+            Status = booking.Status.ToString()
+        };
+    }
+
+    public async Task<BookingDto?> GetBookingAsync(Guid id, Guid userId)
+    {
+        var booking = await _bookingRepository.GetByIdAsync(id);
+
+        if (booking == null || booking.UserId != userId)
+            return null;
 
         return new BookingDto
         {

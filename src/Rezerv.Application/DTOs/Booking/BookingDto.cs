@@ -1,4 +1,4 @@
-namespace Rezerv.Application.DTOs;
+namespace Rezerv.Application.DTOs.Booking;
 
 public class BookingDto
 {
