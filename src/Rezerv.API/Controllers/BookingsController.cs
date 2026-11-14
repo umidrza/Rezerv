@@ -2,9 +2,11 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.DTOs.Booking;
 using Rezerv.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Rezerv.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class BookingsController : ControllerBase
