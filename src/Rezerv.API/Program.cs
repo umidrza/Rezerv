@@ -69,6 +69,8 @@ builder.Services.AddScoped<IHotelRepository, HotelRepository>();
 builder.Services.AddScoped<IHotelService, HotelService>();
 builder.Services.AddScoped<IRoomTypeRepository, RoomTypeRepository>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<IRoomManagementRepository, RoomManagementRepository>();
+builder.Services.AddScoped<IRoomManagementService, RoomManagementService>();
 
 var app = builder.Build();
 
