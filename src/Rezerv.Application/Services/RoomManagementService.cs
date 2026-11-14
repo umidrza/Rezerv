@@ -8,16 +8,22 @@ public class RoomManagementService : IRoomManagementService
 {
     private readonly IRoomManagementRepository _roomRepository;
     private readonly IRoomTypeRepository _roomTypeRepository;
+    private readonly IHotelManagerRepository _hotelManagerRepository;
 
     public RoomManagementService(
         IRoomManagementRepository roomRepository,
-        IRoomTypeRepository roomTypeRepository)
+        IRoomTypeRepository roomTypeRepository,
+        IHotelManagerRepository hotelManagerRepository)
     {
         _roomRepository = roomRepository;
         _roomTypeRepository = roomTypeRepository;
+        _hotelManagerRepository = hotelManagerRepository;
     }
 
-    public async Task<RoomDto> CreateRoomAsync(CreateRoomDto dto)
+    public async Task<RoomDto> CreateRoomAsync(
+        CreateRoomDto dto,
+        Guid userId,
+        bool isAdmin)
     {
         if (string.IsNullOrWhiteSpace(dto.RoomNumber))
             throw new ArgumentException("Room number is required.");
@@ -29,6 +35,16 @@ public class RoomManagementService : IRoomManagementService
 
         if (roomType == null)
             throw new ArgumentException("Room type not found.");
+
+        if (!isAdmin)
+        {
+            var isAssigned = await _hotelManagerRepository
+                .IsManagerAssignedAsync(userId, roomType.HotelId);
+
+            if (!isAssigned)
+                throw new UnauthorizedAccessException(
+                    "You are not assigned to this hotel.");
+        }
 
         var room = new Room
         {

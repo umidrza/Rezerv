@@ -57,7 +57,7 @@ public class AuthService : IAuthService
         return await GenerateTokenAsync(user);
     }
 
-    private Task<AuthResponseDto> GenerateTokenAsync(ApplicationUser user)
+    private async Task<AuthResponseDto> GenerateTokenAsync(ApplicationUser user)
     {
         var claims = new List<Claim>
         {
@@ -65,6 +65,13 @@ public class AuthService : IAuthService
             new(ClaimTypes.Email, user.Email!),
             new(ClaimTypes.Name, user.FullName)
         };
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_jwtSettings.Secret));
@@ -80,7 +87,7 @@ public class AuthService : IAuthService
                 _jwtSettings.ExpirationInMinutes),
             signingCredentials: credentials);
 
-        return Task.FromResult(new AuthResponseDto
+        return await Task.FromResult(new AuthResponseDto
         {
             UserId = user.Id,
             FullName = user.FullName,

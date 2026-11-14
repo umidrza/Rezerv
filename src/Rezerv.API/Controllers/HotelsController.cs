@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.DTOs.Hotel;
 using Rezerv.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Rezerv.API.Controllers;
 
@@ -16,6 +17,7 @@ public class HotelsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateHotel(CreateHotelDto dto)
     {
         try

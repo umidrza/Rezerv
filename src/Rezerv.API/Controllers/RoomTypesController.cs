@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.DTOs.RoomType;
 using Rezerv.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Rezerv.API.Controllers;
 
@@ -16,20 +18,30 @@ public class RoomTypesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> CreateRoomType(CreateRoomTypeDto dto)
     {
+        var userId = Guid.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var isAdmin = User.IsInRole("Admin");
+
         try
         {
-            var roomType = await _roomTypeService.CreateRoomTypeAsync(dto);
+            var roomType = await _roomTypeService.CreateRoomTypeAsync(
+                dto,
+                userId,
+                isAdmin);
 
-            return CreatedAtAction(
-                nameof(GetRoomType),
-                new { id = roomType.Id },
-                roomType);
+            return Ok(roomType);
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
         }
     }
 

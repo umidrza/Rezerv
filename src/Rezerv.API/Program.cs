@@ -71,6 +71,9 @@ builder.Services.AddScoped<IRoomTypeRepository, RoomTypeRepository>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomManagementRepository, RoomManagementRepository>();
 builder.Services.AddScoped<IRoomManagementService, RoomManagementService>();
+builder.Services.AddScoped<IHotelManagerRepository, HotelManagerRepository>();
+builder.Services.AddScoped<IHotelManagerService, HotelManagerService>();
+builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 
 var app = builder.Build();
 
@@ -102,6 +105,18 @@ using (var scope = app.Services.CreateScope())
         .GetRequiredService<ApplicationDbContext>();
 
     await dbContext.Database.MigrateAsync();
+
+    var roleManager = scope.ServiceProvider
+        .GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+    await RoleSeeder.SeedRolesAsync(roleManager);
+
+    var userManager = scope.ServiceProvider
+        .GetRequiredService<UserManager<ApplicationUser>>();
+
+    await AdminSeeder.SeedAdminAsync(
+        userManager,
+        app.Configuration);
 }
 
 app.Run();

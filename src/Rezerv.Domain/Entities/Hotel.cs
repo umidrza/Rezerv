@@ -20,4 +20,6 @@ public class Hotel
 
     public ICollection<RoomType> RoomTypes { get; set; } = new List<RoomType>();
 
+    public ICollection<HotelManager> HotelManagers { get; set; } = new List<HotelManager>();
+
 }

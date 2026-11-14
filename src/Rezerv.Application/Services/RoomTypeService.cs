@@ -8,17 +8,33 @@ public class RoomTypeService : IRoomTypeService
 {
     private readonly IRoomTypeRepository _roomTypeRepository;
     private readonly IHotelRepository _hotelRepository;
+    private readonly IHotelManagerRepository _hotelManagerRepository;
 
     public RoomTypeService(
-        IRoomTypeRepository roomTypeRepository,
-        IHotelRepository hotelRepository)
+    IRoomTypeRepository roomTypeRepository,
+    IHotelRepository hotelRepository,
+    IHotelManagerRepository hotelManagerRepository)
     {
         _roomTypeRepository = roomTypeRepository;
         _hotelRepository = hotelRepository;
+        _hotelManagerRepository = hotelManagerRepository;
     }
 
-    public async Task<RoomTypeDto> CreateRoomTypeAsync(CreateRoomTypeDto dto)
+    public async Task<RoomTypeDto> CreateRoomTypeAsync(
+        CreateRoomTypeDto dto,
+        Guid userId,
+        bool isAdmin)
     {
+        if (!isAdmin)
+        {
+            var isAssigned = await _hotelManagerRepository
+                .IsManagerAssignedAsync(userId, dto.HotelId);
+
+            if (!isAssigned)
+                throw new UnauthorizedAccessException(
+                    "You are not assigned to this hotel.");
+        }
+        
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new ArgumentException("Room type name is required.");
 

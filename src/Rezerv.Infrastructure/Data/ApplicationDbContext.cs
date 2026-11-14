@@ -23,6 +23,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
 
     public DbSet<BookingRoom> BookingRooms { get; set; }
 
+    public DbSet<HotelManager> HotelManagers { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -69,5 +71,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
         modelBuilder.Entity<BookingRoom>()
             .Property(br => br.PricePerNight)
             .HasPrecision(10, 2);
+
+        modelBuilder.Entity<HotelManager>(entity =>
+        {
+            entity.HasKey(hm => hm.Id);
+
+            entity.HasOne(hm => hm.Hotel)
+                .WithMany(h => h.HotelManagers)
+                .HasForeignKey(hm => hm.HotelId);
+
+            entity.HasIndex(hm => new { hm.UserId, hm.HotelId })
+                .IsUnique();
+        });
     }
 }
