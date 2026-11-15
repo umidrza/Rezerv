@@ -14,16 +14,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     }
 
     public DbSet<Hotel> Hotels { get; set; }
-
     public DbSet<RoomType> RoomTypes { get; set; }
-
     public DbSet<Room> Rooms { get; set; }
-
     public DbSet<Booking> Bookings { get; set; }
-
     public DbSet<BookingRoom> BookingRooms { get; set; }
-
     public DbSet<HotelManager> HotelManagers { get; set; }
+    public DbSet<HotelImage> HotelImages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -83,5 +79,20 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             entity.HasIndex(hm => new { hm.UserId, hm.HotelId })
                 .IsUnique();
         });
+
+        modelBuilder.Entity<HotelImage>(entity =>
+        {
+            entity.HasKey(i => i.Id);
+
+            entity.HasOne(i => i.Hotel)
+                .WithMany(h => h.Images)
+                .HasForeignKey(i => i.HotelId);
+        });
+
+        modelBuilder.Entity<Hotel>()
+            .HasOne(h => h.PrimaryImage)
+            .WithMany()
+            .HasForeignKey(h => h.PrimaryImageId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

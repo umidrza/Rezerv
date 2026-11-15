@@ -244,12 +244,37 @@ namespace Rezerv.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("PrimaryImageId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("StarRating")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("PrimaryImageId");
+
                     b.ToTable("Hotels");
+                });
+
+            modelBuilder.Entity("Rezerv.Domain.Entities.HotelImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("HotelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HotelId");
+
+                    b.ToTable("HotelImages");
                 });
 
             modelBuilder.Entity("Rezerv.Domain.Entities.HotelManager", b =>
@@ -481,6 +506,27 @@ namespace Rezerv.Infrastructure.Data.Migrations
                     b.Navigation("Room");
                 });
 
+            modelBuilder.Entity("Rezerv.Domain.Entities.Hotel", b =>
+                {
+                    b.HasOne("Rezerv.Domain.Entities.HotelImage", "PrimaryImage")
+                        .WithMany()
+                        .HasForeignKey("PrimaryImageId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("PrimaryImage");
+                });
+
+            modelBuilder.Entity("Rezerv.Domain.Entities.HotelImage", b =>
+                {
+                    b.HasOne("Rezerv.Domain.Entities.Hotel", "Hotel")
+                        .WithMany("Images")
+                        .HasForeignKey("HotelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Hotel");
+                });
+
             modelBuilder.Entity("Rezerv.Domain.Entities.HotelManager", b =>
                 {
                     b.HasOne("Rezerv.Domain.Entities.Hotel", "Hotel")
@@ -522,6 +568,8 @@ namespace Rezerv.Infrastructure.Data.Migrations
             modelBuilder.Entity("Rezerv.Domain.Entities.Hotel", b =>
                 {
                     b.Navigation("HotelManagers");
+
+                    b.Navigation("Images");
 
                     b.Navigation("RoomTypes");
                 });
