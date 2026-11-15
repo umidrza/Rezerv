@@ -167,21 +167,13 @@ public class BookingService : IBookingService
         if (booking.Status != BookingStatus.Submitted)
             throw new ArgumentException("Only submitted bookings can be approved.");
 
-        var roomIds = booking.BookingRooms
-            .Select(br => br.RoomId)
-            .ToList();
+        var approved = await _bookingRepository.ApproveAsync(bookingId);
 
-        var isAvailable = await _roomRepository.AreRoomsAvailableAsync(
-            roomIds,
-            booking.CheckIn,
-            booking.CheckOut);
-
-        if (!isAvailable)
-            throw new ArgumentException("One or more rooms are no longer available.");
-
-        booking.Status = BookingStatus.Approved;
-
-        await _bookingRepository.UpdateAsync(booking);
+        if (!approved)
+        {
+            throw new ArgumentException(
+                "Booking could not be approved. One or more rooms are no longer available.");
+        }
     }
 
     public async Task RejectBookingAsync(
@@ -212,6 +204,29 @@ public class BookingService : IBookingService
         await _bookingRepository.UpdateAsync(booking);
     }
 
+    public async Task CancelBookingAsync(Guid bookingId, Guid userId)
+    {
+        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
+        if (booking == null)
+            throw new ArgumentException("Booking not found.");
+
+        if (booking.UserId != userId)
+            throw new UnauthorizedAccessException(
+                "You cannot cancel someone else's booking.");
+
+        if (booking.Status != BookingStatus.Submitted &&
+            booking.Status != BookingStatus.Approved)
+        {
+            throw new ArgumentException(
+                "Only submitted or approved bookings can be cancelled.");
+        }
+
+        booking.Status = BookingStatus.Cancelled;
+
+        await _bookingRepository.UpdateAsync(booking);
+    }
+
     public async Task<List<BookingDto>> GetHotelBookingsAsync(
         Guid hotelId,
         Guid userId,
@@ -233,6 +248,22 @@ public class BookingService : IBookingService
         }
 
         var bookings = await _bookingRepository.GetByHotelIdAsync(hotelId);
+
+        return bookings.Select(booking => new BookingDto
+        {
+            Id = booking.Id,
+            HotelId = booking.HotelId,
+            CheckIn = booking.CheckIn,
+            CheckOut = booking.CheckOut,
+            NumberOfGuests = booking.NumberOfGuests,
+            TotalPrice = booking.TotalPrice,
+            Status = booking.Status.ToString()
+        }).ToList();
+    }
+
+    public async Task<List<BookingDto>> GetMyBookingsAsync(Guid userId)
+    {
+        var bookings = await _bookingRepository.GetByUserIdAsync(userId);
 
         return bookings.Select(booking => new BookingDto
         {

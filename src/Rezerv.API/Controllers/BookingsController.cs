@@ -120,6 +120,29 @@ public class BookingsController : ControllerBase
         }
     }
 
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize]
+    public async Task<IActionResult> CancelBooking(Guid id)
+    {
+        var userId = Guid.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        try
+        {
+            await _bookingService.CancelBookingAsync(id, userId);
+
+            return Ok(new { message = "Booking cancelled successfully." });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
     [HttpGet("hotel/{hotelId:guid}")]
     [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> GetHotelBookings(Guid hotelId)
@@ -146,5 +169,17 @@ public class BookingsController : ControllerBase
         {
             return Forbid();
         }
+    }
+
+    [HttpGet("my-bookings")]
+    [Authorize]
+    public async Task<IActionResult> GetMyBookings()
+    {
+        var userId = Guid.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var bookings = await _bookingService.GetMyBookingsAsync(userId);
+
+        return Ok(bookings);
     }
 }
