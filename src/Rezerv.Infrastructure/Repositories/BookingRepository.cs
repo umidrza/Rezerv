@@ -32,4 +32,13 @@ public class BookingRepository : IBookingRepository
         _context.Bookings.Update(booking);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<List<Booking>> GetByHotelIdAsync(Guid hotelId)
+    {
+        return await _context.Bookings
+            .Include(b => b.BookingRooms)
+            .Where(b => b.HotelId == hotelId)
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync();
+    }
 }

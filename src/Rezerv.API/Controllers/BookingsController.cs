@@ -71,4 +71,80 @@ public class BookingsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPost("{id:guid}/approve")]
+    [Authorize(Roles = "Admin,HotelManager")]
+    public async Task<IActionResult> ApproveBooking(Guid id)
+    {
+        var userId = Guid.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var isAdmin = User.IsInRole("Admin");
+
+        try
+        {
+            await _bookingService.ApproveBookingAsync(id, userId, isAdmin);
+            return Ok(new { message = "Booking approved successfully." });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpPost("{id:guid}/reject")]
+    [Authorize(Roles = "Admin,HotelManager")]
+    public async Task<IActionResult> RejectBooking(Guid id)
+    {
+        var userId = Guid.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var isAdmin = User.IsInRole("Admin");
+
+        try
+        {
+            await _bookingService.RejectBookingAsync(id, userId, isAdmin);
+            return Ok(new { message = "Booking rejected successfully." });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpGet("hotel/{hotelId:guid}")]
+    [Authorize(Roles = "Admin,HotelManager")]
+    public async Task<IActionResult> GetHotelBookings(Guid hotelId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var isAdmin = User.IsInRole("Admin");
+
+        try
+        {
+            var bookings = await _bookingService.GetHotelBookingsAsync(
+                hotelId,
+                userId,
+                isAdmin);
+
+            return Ok(bookings);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
 }
