@@ -57,6 +57,7 @@ public class BookingsController : ControllerBase
         return Ok(booking);
     }
 
+    [AllowAnonymous]
     [HttpPost("check-availability")]
     public async Task<IActionResult> CheckRoomAvailability(CheckRoomAvailabilityDto dto)
     {

@@ -1,14 +1,14 @@
-import { BrowserRouter, Routes, Route } from "react-router";
+import { BrowserRouter, Route, Routes } from "react-router";
 
 import MainLayout from "./layouts/MainLayout";
-
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import NotFoundPage from "./pages/NotFoundPage";
 import HotelsPage from "./features/hotels/pages/HotelsPage";
 import HotelDetailsPage from "./features/hotels/pages/HotelDetailsPage";
+import LoginPage from "./features/auth/pages/LoginPage";
+import RegisterPage from "./features/auth/pages/RegisterPage";
+import MyBookingsPage from "./features/bookings/pages/MyBookingsPage";
+import ProtectedRoute from "./features/auth/ProtectedRoute";
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
       <Routes>
@@ -16,13 +16,14 @@ function App() {
           <Route path="/" element={<HotelsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/hotels/:id" element={<HotelDetailsPage />} />
-        </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
+          <Route path="/hotels/:id" element={<HotelDetailsPage />} />
+
+          <Route element={<ProtectedRoute />}>
+            <Route path="/my-bookings" element={<MyBookingsPage />} />
+          </Route>
+        </Route>
       </Routes>
     </BrowserRouter>
   );
 }
-
-export default App;
