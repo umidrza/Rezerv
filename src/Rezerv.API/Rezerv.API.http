@@ -1,6 +1,0 @@
-@Rezerv.API_HostAddress = http://localhost:5218
-
-GET {{Rezerv.API_HostAddress}}/api/bookings/bookingId
-Accept: application/json
-
-###
