@@ -25,10 +25,11 @@ public class BookingService : IBookingService
         _hotelManagerRepository = hotelManagerRepository;
     }
 
-    public async Task<BookingDto> CreateBookingAsync(
-        CreateBookingDto dto,
-        Guid userId)
+    public async Task<BookingDto> CreateBookingAsync(CreateBookingDto dto, Guid userId)
     {
+        dto.CheckIn = DateTime.SpecifyKind(dto.CheckIn, DateTimeKind.Utc);
+        dto.CheckOut = DateTime.SpecifyKind(dto.CheckOut, DateTimeKind.Utc);
+
         if (dto.CheckIn >= dto.CheckOut)
             throw new ArgumentException("Invalid booking dates.");
 
@@ -121,6 +122,9 @@ public class BookingService : IBookingService
 
     public async Task<bool> CheckRoomAvailabilityAsync(CheckRoomAvailabilityDto dto)
     {
+        dto.CheckIn = DateTime.SpecifyKind(dto.CheckIn, DateTimeKind.Utc);
+        dto.CheckOut = DateTime.SpecifyKind(dto.CheckOut, DateTimeKind.Utc);
+        
         if (dto.CheckIn >= dto.CheckOut)
             throw new ArgumentException("Check-out must be after check-in.");
 

@@ -48,4 +48,20 @@ public class HotelsController : ControllerBase
 
         return Ok(hotel);
     }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchHotels(
+        [FromQuery] SearchHotelsDto dto)
+    {
+        try
+        {
+            var hotels = await _hotelService.SearchHotelsAsync(dto);
+
+            return Ok(hotels);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }

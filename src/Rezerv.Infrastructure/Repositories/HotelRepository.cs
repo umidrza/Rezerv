@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Rezerv.Application.Interfaces;
 using Rezerv.Domain.Entities;
 using Rezerv.Infrastructure.Data;
+using Rezerv.Application.DTOs.Hotel;
+using Rezerv.Domain.Enums;
 
 namespace Rezerv.Infrastructure.Repositories;
 
@@ -38,5 +40,58 @@ public class HotelRepository : IHotelRepository
     {
         _context.Hotels.Update(hotel);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<List<Hotel>> SearchAsync(SearchHotelsDto dto)
+    {
+        return await BuildSearchQuery(dto)
+            .Include(h => h.PrimaryImage)
+            .OrderBy(h => h.Name)
+            .Skip((dto.Page - 1) * dto.PageSize)
+            .Take(dto.PageSize)
+            .ToListAsync();
+    }
+
+    private IQueryable<Hotel> BuildSearchQuery(SearchHotelsDto dto)
+    {
+        var query = _context.Hotels
+            .Where(h => h.IsActive)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(dto.City))
+        {
+            query = query.Where(h =>
+                h.City.ToLower() == dto.City.ToLower());
+        }
+
+        if (dto.StarRating.HasValue)
+        {
+            query = query.Where(h =>
+                h.StarRating == dto.StarRating.Value);
+        }
+
+        if (dto.CheckIn.HasValue || dto.NumberOfGuests.HasValue)
+        {
+            var requiredCapacity = dto.NumberOfGuests ?? 1;
+
+            query = query.Where(h =>
+                h.RoomTypes
+                    .SelectMany(rt => rt.Rooms)
+                    .Any(r =>
+                        r.IsActive &&
+                        r.RoomType.Capacity >= requiredCapacity &&
+                        (!dto.CheckIn.HasValue ||
+                         !r.BookingRooms.Any(br =>
+                            br.Booking.Status == BookingStatus.Approved &&
+                            br.Booking.CheckIn < dto.CheckOut!.Value &&
+                            br.Booking.CheckOut > dto.CheckIn.Value))));
+        }
+
+        return query;
+    }
+
+    public async Task<int> CountSearchResultsAsync(SearchHotelsDto dto)
+    {
+        return await BuildSearchQuery(dto).CountAsync();
     }
 }
