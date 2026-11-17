@@ -7,6 +7,8 @@ import LoginPage from "./features/auth/pages/LoginPage";
 import RegisterPage from "./features/auth/pages/RegisterPage";
 import MyBookingsPage from "./features/bookings/pages/MyBookingsPage";
 import ProtectedRoute from "./features/auth/ProtectedRoute";
+import BookingDetailsPage from "./features/bookings/pages/BookingDetailsPage";
+import HotelBookingsPage from "./features/bookings/pages/HotelBookingsPage";
 
 export default function App() {
   return (
@@ -21,6 +23,8 @@ export default function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route path="/my-bookings" element={<MyBookingsPage />} />
+            <Route path="/bookings/:id" element={<BookingDetailsPage />}/>
+            <Route path="/hotels/:hotelId/bookings" element={<HotelBookingsPage  />}/>
           </Route>
         </Route>
       </Routes>

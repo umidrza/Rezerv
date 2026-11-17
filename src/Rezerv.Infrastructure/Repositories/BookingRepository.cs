@@ -1,9 +1,9 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Rezerv.Application.Interfaces;
 using Rezerv.Domain.Entities;
-using Rezerv.Infrastructure.Data;
-using System.Data;
 using Rezerv.Domain.Enums;
+using Rezerv.Infrastructure.Data;
 
 namespace Rezerv.Infrastructure.Repositories;
 
@@ -19,7 +19,9 @@ public class BookingRepository : IBookingRepository
     public async Task<Booking?> GetByIdAsync(Guid id)
     {
         return await _context.Bookings
-            .Include(b => b.BookingRooms)
+            .Include(b => b.Hotel)
+            .Include(b => b.Room)
+                .ThenInclude(r => r.RoomType)
             .FirstOrDefaultAsync(b => b.Id == id);
     }
 
@@ -38,7 +40,9 @@ public class BookingRepository : IBookingRepository
     public async Task<List<Booking>> GetByHotelIdAsync(Guid hotelId)
     {
         return await _context.Bookings
-            .Include(b => b.BookingRooms)
+            .Include(b => b.Hotel)
+            .Include(b => b.Room)
+                .ThenInclude(r => r.RoomType)
             .Where(b => b.HotelId == hotelId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -47,10 +51,24 @@ public class BookingRepository : IBookingRepository
     public async Task<List<Booking>> GetByUserIdAsync(Guid userId)
     {
         return await _context.Bookings
-            .Include(b => b.BookingRooms)
+            .Include(b => b.Hotel)
+            .Include(b => b.Room)
+                .ThenInclude(r => r.RoomType)
             .Where(b => b.UserId == userId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
+    }
+
+    public async Task<bool> IsRoomBookedAsync(
+        Guid roomId,
+        DateTime checkIn,
+        DateTime checkOut)
+    {
+        return await _context.Bookings.AnyAsync(b =>
+            b.RoomId == roomId &&
+            b.Status == BookingStatus.Approved &&
+            b.CheckIn < checkOut &&
+            b.CheckOut > checkIn);
     }
 
     public async Task<bool> ApproveAsync(Guid bookingId)
@@ -59,24 +77,19 @@ public class BookingRepository : IBookingRepository
             .BeginTransactionAsync(IsolationLevel.Serializable);
 
         var booking = await _context.Bookings
-            .Include(b => b.BookingRooms)
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
-        if (booking == null || booking.Status != BookingStatus.Submitted)
+        if (booking == null)
             return false;
 
-        var roomIds = booking.BookingRooms
-            .Select(br => br.RoomId)
-            .ToList();
+        var isBooked = await _context.Bookings.AnyAsync(b =>
+            b.Id != bookingId &&
+            b.RoomId == booking.RoomId &&
+            b.Status == BookingStatus.Approved &&
+            b.CheckIn < booking.CheckOut &&
+            b.CheckOut > booking.CheckIn);
 
-        var hasConflict = await _context.BookingRooms
-            .AnyAsync(br =>
-                roomIds.Contains(br.RoomId) &&
-                br.Booking.Status == BookingStatus.Approved &&
-                br.Booking.CheckIn < booking.CheckOut &&
-                br.Booking.CheckOut > booking.CheckIn);
-
-        if (hasConflict)
+        if (isBooked)
             return false;
 
         booking.Status = BookingStatus.Approved;

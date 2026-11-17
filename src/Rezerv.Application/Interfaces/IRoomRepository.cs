@@ -4,10 +4,10 @@ namespace Rezerv.Application.Interfaces;
 
 public interface IRoomRepository
 {
-    Task<List<Room>> GetByIdsAsync(List<Guid> roomIds);
+    Task<Room?> GetByIdAsync(Guid id);
 
-    Task<bool> AreRoomsAvailableAsync(
-        List<Guid> roomIds,
+    Task<bool> IsRoomAvailableAsync(
+        Guid roomId,
         DateTime checkIn,
         DateTime checkOut);
 }

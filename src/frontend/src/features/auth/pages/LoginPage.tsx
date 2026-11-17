@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 
 import API_BASE_URL from "../../../services/api";
 import { useAuth } from "../AuthContext";
@@ -20,6 +20,10 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const location = useLocation();
+
+    const from = location.state?.from?.pathname || "/";
 
     async function handleSubmit(e: FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -49,7 +53,7 @@ export default function LoginPage() {
 
             login(result.token);
 
-            navigate("/");
+            navigate(from, { replace: true });
         } catch (err) {
             setError(
                 err instanceof Error

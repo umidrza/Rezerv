@@ -173,6 +173,13 @@ namespace Rezerv.Infrastructure.Data.Migrations
                     b.Property<int>("NumberOfGuests")
                         .HasColumnType("integer");
 
+                    b.Property<decimal>("PricePerNight")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -187,32 +194,9 @@ namespace Rezerv.Infrastructure.Data.Migrations
 
                     b.HasIndex("HotelId");
 
-                    b.ToTable("Bookings");
-                });
-
-            modelBuilder.Entity("Rezerv.Domain.Entities.BookingRoom", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("PricePerNight")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.Property<Guid>("RoomId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BookingId");
-
                     b.HasIndex("RoomId");
 
-                    b.ToTable("BookingRooms");
+                    b.ToTable("Bookings");
                 });
 
             modelBuilder.Entity("Rezerv.Domain.Entities.Hotel", b =>
@@ -484,24 +468,13 @@ namespace Rezerv.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Hotel");
-                });
-
-            modelBuilder.Entity("Rezerv.Domain.Entities.BookingRoom", b =>
-                {
-                    b.HasOne("Rezerv.Domain.Entities.Booking", "Booking")
-                        .WithMany("BookingRooms")
-                        .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Rezerv.Domain.Entities.Room", "Room")
-                        .WithMany("BookingRooms")
+                        .WithMany("Bookings")
                         .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Booking");
+                    b.Navigation("Hotel");
 
                     b.Navigation("Room");
                 });
@@ -560,11 +533,6 @@ namespace Rezerv.Infrastructure.Data.Migrations
                     b.Navigation("Hotel");
                 });
 
-            modelBuilder.Entity("Rezerv.Domain.Entities.Booking", b =>
-                {
-                    b.Navigation("BookingRooms");
-                });
-
             modelBuilder.Entity("Rezerv.Domain.Entities.Hotel", b =>
                 {
                     b.Navigation("HotelManagers");
@@ -576,7 +544,7 @@ namespace Rezerv.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Rezerv.Domain.Entities.Room", b =>
                 {
-                    b.Navigation("BookingRooms");
+                    b.Navigation("Bookings");
                 });
 
             modelBuilder.Entity("Rezerv.Domain.Entities.RoomType", b =>

@@ -15,26 +15,32 @@ public class RoomRepository : IRoomRepository
         _context = context;
     }
 
-    public async Task<List<Room>> GetByIdsAsync(List<Guid> roomIds)
+    public async Task<Room?> GetByIdAsync(Guid id)
     {
         return await _context.Rooms
             .Include(r => r.RoomType)
-            .Where(r => roomIds.Contains(r.Id))
-            .ToListAsync();
+                .ThenInclude(rt => rt.Hotel)
+            .FirstOrDefaultAsync(r => r.Id == id);
     }
 
-    public async Task<bool> AreRoomsAvailableAsync(
-        List<Guid> roomIds,
+    public async Task<bool> IsRoomAvailableAsync(
+        Guid roomId,
         DateTime checkIn,
         DateTime checkOut)
     {
-        var hasConflict = await _context.BookingRooms
-            .AnyAsync(br =>
-                roomIds.Contains(br.RoomId) &&
-                br.Booking.Status == BookingStatus.Approved &&
-                br.Booking.CheckIn < checkOut &&
-                br.Booking.CheckOut > checkIn);
+        var room = await _context.Rooms
+            .AnyAsync(r => r.Id == roomId && r.IsActive);
 
-        return !hasConflict;
+        if (!room)
+            return false;
+
+        var hasApprovedBooking = await _context.Bookings
+            .AnyAsync(b =>
+                b.RoomId == roomId &&
+                b.Status == BookingStatus.Approved &&
+                b.CheckIn < checkOut &&
+                b.CheckOut > checkIn);
+
+        return !hasApprovedBooking;
     }
 }

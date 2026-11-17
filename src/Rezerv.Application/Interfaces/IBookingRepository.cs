@@ -10,4 +10,5 @@ public interface IBookingRepository
     Task<List<Booking>> GetByHotelIdAsync(Guid hotelId);
     Task<List<Booking>> GetByUserIdAsync(Guid userId);
     Task<bool> ApproveAsync(Guid bookingId);
+    Task<bool> IsRoomBookedAsync(Guid roomId, DateTime checkIn, DateTime checkOut);
 }

@@ -5,6 +5,7 @@ public class Room
     public Guid Id { get; set; }
 
     public Guid RoomTypeId { get; set; }
+    public RoomType RoomType { get; set; } = null!;
 
     public string RoomNumber { get; set; } = string.Empty;
 
@@ -12,7 +13,5 @@ public class Room
 
     public bool IsActive { get; set; } = true;
 
-    public RoomType RoomType { get; set; } = null!;
-
-    public ICollection<BookingRoom> BookingRooms { get; set; } = new List<BookingRoom>();
+    public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }

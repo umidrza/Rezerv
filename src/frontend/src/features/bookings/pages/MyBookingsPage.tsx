@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getMyBookings } from "../../../services/bookingService";
 import type { Booking } from "../../../types/booking";
+import { Link } from "react-router";
 
 const bookingStatuses = [
   "Draft",
@@ -147,6 +148,13 @@ export default function MyBookingsPage() {
                     {booking.totalPrice.toFixed(2)}
                   </p>
                 </div>
+
+                <Link
+                  to={`/bookings/${booking.id}`}
+                  className="mt-4 inline-block font-medium text-orange-600 hover:text-orange-700"
+                >
+                  View details →
+                </Link>
               </div>
             );
           })}

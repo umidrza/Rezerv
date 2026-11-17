@@ -1,12 +1,11 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.DTOs.Booking;
 using Rezerv.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 
 namespace Rezerv.API.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class BookingsController : ControllerBase
@@ -18,17 +17,20 @@ public class BookingsController : ControllerBase
         _bookingService = bookingService;
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateBooking(CreateBookingDto dto)
     {
-        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = GetUserId();
 
-        if (!Guid.TryParse(userIdValue, out var userId))
+        if (userId == null)
             return Unauthorized();
 
         try
         {
-            var booking = await _bookingService.CreateBookingAsync(dto, userId);
+            var booking = await _bookingService.CreateBookingAsync(
+                dto,
+                userId.Value);
 
             return CreatedAtAction(
                 nameof(GetBooking),
@@ -41,29 +43,36 @@ public class BookingsController : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetBooking(Guid id)
     {
-        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(userIdValue, out var userId))
-            return Unauthorized();
-
-        var booking = await _bookingService.GetBookingAsync(id, userId);
+        var booking = await _bookingService.GetBookingAsync(id);
 
         if (booking == null)
             return NotFound();
 
+        var userId = GetUserId();
+        var isAdmin = User.IsInRole("Admin");
+
+        if (!isAdmin && booking.UserId != userId)
+            return Forbid();
+
         return Ok(booking);
     }
 
-    [AllowAnonymous]
-    [HttpPost("check-availability")]
-    public async Task<IActionResult> CheckRoomAvailability(CheckRoomAvailabilityDto dto)
+    [HttpGet("check-availability")]
+    public async Task<IActionResult> CheckRoomAvailability(
+        [FromQuery] Guid roomId,
+        [FromQuery] DateTime checkIn,
+        [FromQuery] DateTime checkOut)
     {
         try
         {
-            var isAvailable = await _bookingService.CheckRoomAvailabilityAsync(dto);
+            var isAvailable = await _bookingService.CheckRoomAvailabilityAsync(
+                roomId,
+                checkIn,
+                checkOut);
 
             return Ok(new { isAvailable });
         }
@@ -73,83 +82,28 @@ public class BookingsController : ControllerBase
         }
     }
 
-    [HttpPost("{id:guid}/approve")]
-    [Authorize(Roles = "Admin,HotelManager")]
-    public async Task<IActionResult> ApproveBooking(Guid id)
-    {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
-        var isAdmin = User.IsInRole("Admin");
-
-        try
-        {
-            await _bookingService.ApproveBookingAsync(id, userId, isAdmin);
-            return Ok(new { message = "Booking approved successfully." });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-    }
-
-    [HttpPost("{id:guid}/reject")]
-    [Authorize(Roles = "Admin,HotelManager")]
-    public async Task<IActionResult> RejectBooking(Guid id)
-    {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
-        var isAdmin = User.IsInRole("Admin");
-
-        try
-        {
-            await _bookingService.RejectBookingAsync(id, userId, isAdmin);
-            return Ok(new { message = "Booking rejected successfully." });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-    }
-
-    [HttpPost("{id:guid}/cancel")]
     [Authorize]
-    public async Task<IActionResult> CancelBooking(Guid id)
+    [HttpGet("my-bookings")]
+    public async Task<IActionResult> GetMyBookings()
     {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = GetUserId();
 
-        try
-        {
-            await _bookingService.CancelBookingAsync(id, userId);
+        if (userId == null)
+            return Unauthorized();
 
-            return Ok(new { message = "Booking cancelled successfully." });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        var bookings = await _bookingService.GetMyBookingsAsync(userId.Value);
+
+        return Ok(bookings);
     }
 
-    [HttpGet("hotel/{hotelId:guid}")]
     [Authorize(Roles = "Admin,HotelManager")]
+    [HttpGet("hotel/{hotelId:guid}")]
     public async Task<IActionResult> GetHotelBookings(Guid hotelId)
     {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = GetUserId();
+
+        if (userId == null)
+            return Unauthorized();
 
         var isAdmin = User.IsInRole("Admin");
 
@@ -157,14 +111,10 @@ public class BookingsController : ControllerBase
         {
             var bookings = await _bookingService.GetHotelBookingsAsync(
                 hotelId,
-                userId,
+                userId.Value,
                 isAdmin);
 
             return Ok(bookings);
-        }
-        catch (ArgumentException ex)
-        {
-            return NotFound(ex.Message);
         }
         catch (UnauthorizedAccessException)
         {
@@ -172,15 +122,69 @@ public class BookingsController : ControllerBase
         }
     }
 
-    [HttpGet("my-bookings")]
-    [Authorize]
-    public async Task<IActionResult> GetMyBookings()
+    [Authorize(Roles = "Admin,HotelManager")]
+    [HttpPut("{id:guid}/approve")]
+    public async Task<IActionResult> ApproveBooking(Guid id)
     {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = GetUserId();
 
-        var bookings = await _bookingService.GetMyBookingsAsync(userId);
+        if (userId == null)
+            return Unauthorized();
 
-        return Ok(bookings);
+        var result = await _bookingService.ApproveBookingAsync(
+            id,
+            userId.Value,
+            User.IsInRole("Admin"));
+
+        if (!result)
+            return BadRequest(new { message = "Booking could not be approved." });
+
+        return NoContent();
+    }
+
+    [Authorize(Roles = "Admin,HotelManager")]
+    [HttpPut("{id:guid}/reject")]
+    public async Task<IActionResult> RejectBooking(Guid id)
+    {
+        var userId = GetUserId();
+
+        if (userId == null)
+            return Unauthorized();
+
+        var result = await _bookingService.RejectBookingAsync(
+            id,
+            userId.Value,
+            User.IsInRole("Admin"));
+
+        if (!result)
+            return BadRequest(new { message = "Booking could not be rejected." });
+
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpPut("{id:guid}/cancel")]
+    public async Task<IActionResult> CancelBooking(Guid id)
+    {
+        var userId = GetUserId();
+
+        if (userId == null)
+            return Unauthorized();
+
+        var result = await _bookingService.CancelBookingAsync(
+            id,
+            userId.Value);
+
+        if (!result)
+            return BadRequest(new { message = "Booking could not be cancelled." });
+
+        return NoContent();
+    }
+
+    private Guid? GetUserId()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        return Guid.TryParse(userId, out var id) ? id : null;
     }
 }

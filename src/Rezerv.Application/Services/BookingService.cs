@@ -2,7 +2,6 @@ using Rezerv.Application.DTOs.Booking;
 using Rezerv.Application.Interfaces;
 using Rezerv.Domain.Entities;
 using Rezerv.Domain.Enums;
-using System.Linq;
 
 namespace Rezerv.Application.Services;
 
@@ -10,145 +9,106 @@ public class BookingService : IBookingService
 {
     private readonly IBookingRepository _bookingRepository;
     private readonly IRoomRepository _roomRepository;
-    private readonly IHotelRepository _hotelRepository;
     private readonly IHotelManagerRepository _hotelManagerRepository;
 
     public BookingService(
         IBookingRepository bookingRepository,
         IRoomRepository roomRepository,
-        IHotelRepository hotelRepository,
         IHotelManagerRepository hotelManagerRepository)
     {
         _bookingRepository = bookingRepository;
         _roomRepository = roomRepository;
-        _hotelRepository = hotelRepository;
         _hotelManagerRepository = hotelManagerRepository;
     }
 
-    public async Task<BookingDto> CreateBookingAsync(CreateBookingDto dto, Guid userId)
+    public async Task<BookingDto> CreateBookingAsync(
+        CreateBookingDto dto,
+        Guid userId)
     {
-        dto.CheckIn = DateTime.SpecifyKind(dto.CheckIn, DateTimeKind.Utc);
-        dto.CheckOut = DateTime.SpecifyKind(dto.CheckOut, DateTimeKind.Utc);
+        if (dto.CheckIn.Date < DateTime.UtcNow.Date)
+            throw new ArgumentException("Check-in date cannot be in the past.");
 
-        if (dto.CheckIn >= dto.CheckOut)
-            throw new ArgumentException("Invalid booking dates.");
+        if (dto.CheckOut <= dto.CheckIn)
+            throw new ArgumentException("Check-out must be after check-in.");
 
         if (dto.NumberOfGuests <= 0)
             throw new ArgumentException("Number of guests must be greater than zero.");
 
-        if (dto.RoomIds == null || dto.RoomIds.Count == 0)
-            throw new ArgumentException("At least one room must be selected.");
+        var room = await _roomRepository.GetByIdAsync(dto.RoomId);
 
-        if (dto.RoomIds.Distinct().Count() != dto.RoomIds.Count)
-            throw new ArgumentException("Duplicate rooms are not allowed.");
+        if (room == null || !room.IsActive)
+            throw new ArgumentException("Room not found or inactive.");
 
-        var rooms = await _roomRepository.GetByIdsAsync(dto.RoomIds);
+        if (room.RoomType.HotelId != dto.HotelId)
+            throw new ArgumentException("Room does not belong to this hotel.");
 
-        if (rooms.Count != dto.RoomIds.Count)
-            throw new ArgumentException("One or more rooms were not found.");
+        if (dto.NumberOfGuests > room.RoomType.Capacity)
+            throw new ArgumentException("Room capacity exceeded.");
 
-        if (rooms.Any(room => !room.IsActive || room.RoomType.HotelId != dto.HotelId))
-            throw new ArgumentException("Selected rooms are invalid.");
+        var checkIn = DateTime.SpecifyKind(dto.CheckIn, DateTimeKind.Utc);
+        var checkOut = DateTime.SpecifyKind(dto.CheckOut, DateTimeKind.Utc);
 
-        var capacity = rooms.Sum(room => room.RoomType.Capacity);
+        var isAvailable = await _roomRepository.IsRoomAvailableAsync(
+            dto.RoomId,
+            checkIn,
+            checkOut);
 
-        if (capacity < dto.NumberOfGuests)
-            throw new ArgumentException("Selected rooms cannot accommodate all guests.");
+        if (!isAvailable)
+            throw new ArgumentException("Room is not available for these dates.");
 
-        var available = await _roomRepository.AreRoomsAvailableAsync(
-            dto.RoomIds,
-            dto.CheckIn,
-            dto.CheckOut);
-
-        if (!available)
-            throw new ArgumentException("One or more rooms are unavailable.");
-
-        var nights = (dto.CheckOut - dto.CheckIn).Days;
-
-        var totalPrice = rooms.Sum(
-            room => room.RoomType.PricePerNight * nights);
+        var pricePerNight = room.RoomType.PricePerNight;
+        var nights = (checkOut.Date - checkIn.Date).Days;
+        var totalPrice = pricePerNight * nights;
 
         var booking = new Booking
         {
             Id = Guid.NewGuid(),
             UserId = userId,
             HotelId = dto.HotelId,
-            CheckIn = dto.CheckIn,
-            CheckOut = dto.CheckOut,
+            RoomId = dto.RoomId,
+            CheckIn = checkIn,
+            CheckOut = checkOut,
             NumberOfGuests = dto.NumberOfGuests,
+            PricePerNight = pricePerNight,
             TotalPrice = totalPrice,
             Status = BookingStatus.Submitted,
-            CreatedAt = DateTime.UtcNow,
-            BookingRooms = rooms.Select(room => new BookingRoom
-            {
-                Id = Guid.NewGuid(),
-                RoomId = room.Id,
-                PricePerNight = room.RoomType.PricePerNight
-            }).ToList()
+            CreatedAt = DateTime.UtcNow
         };
 
         await _bookingRepository.AddAsync(booking);
 
-        return new BookingDto
-        {
-            Id = booking.Id,
-            HotelId = booking.HotelId,
-            CheckIn = booking.CheckIn,
-            CheckOut = booking.CheckOut,
-            NumberOfGuests = booking.NumberOfGuests,
-            TotalPrice = booking.TotalPrice,
-            Status = booking.Status.ToString()
-        };
+        return await GetBookingAsync(booking.Id)
+            ?? throw new InvalidOperationException("Booking could not be retrieved.");
     }
 
-    public async Task<BookingDto?> GetBookingAsync(Guid id, Guid userId)
+    public async Task<BookingDto?> GetBookingAsync(Guid bookingId)
     {
-        var booking = await _bookingRepository.GetByIdAsync(id);
+        var booking = await _bookingRepository.GetByIdAsync(bookingId);
 
-        if (booking == null || booking.UserId != userId)
-            return null;
-
-        return new BookingDto
-        {
-            Id = booking.Id,
-            HotelId = booking.HotelId,
-            CheckIn = booking.CheckIn,
-            CheckOut = booking.CheckOut,
-            NumberOfGuests = booking.NumberOfGuests,
-            TotalPrice = booking.TotalPrice,
-            Status = booking.Status.ToString()
-        };
+        return booking == null ? null : MapToDto(booking);
     }
 
-    public async Task<bool> CheckRoomAvailabilityAsync(CheckRoomAvailabilityDto dto)
+    public async Task<bool> CheckRoomAvailabilityAsync(
+        Guid roomId,
+        DateTime checkIn,
+        DateTime checkOut)
     {
-        dto.CheckIn = DateTime.SpecifyKind(dto.CheckIn, DateTimeKind.Utc);
-        dto.CheckOut = DateTime.SpecifyKind(dto.CheckOut, DateTimeKind.Utc);
-        
-        if (dto.CheckIn >= dto.CheckOut)
+        if (checkIn.Date < DateTime.UtcNow.Date)
+            throw new ArgumentException("Check-in date cannot be in the past.");
+
+        if (checkOut <= checkIn)
             throw new ArgumentException("Check-out must be after check-in.");
 
-        if (dto.RoomIds == null || dto.RoomIds.Count == 0)
-            throw new ArgumentException("Select at least one room.");
+        checkIn = DateTime.SpecifyKind(checkIn, DateTimeKind.Utc);
+        checkOut = DateTime.SpecifyKind(checkOut, DateTimeKind.Utc);
 
-        if (dto.RoomIds.Distinct().Count() != dto.RoomIds.Count)
-            throw new ArgumentException("Duplicate room IDs are not allowed.");
-
-        var rooms = await _roomRepository.GetByIdsAsync(dto.RoomIds);
-
-        if (rooms.Count != dto.RoomIds.Count)
-            throw new ArgumentException("One or more rooms were not found.");
-
-        if (rooms.Any(r => !r.IsActive))
-            throw new ArgumentException("One or more rooms are inactive.");
-
-        return await _roomRepository.AreRoomsAvailableAsync(
-            dto.RoomIds,
-            DateTime.SpecifyKind(dto.CheckIn, DateTimeKind.Utc),
-            DateTime.SpecifyKind(dto.CheckOut, DateTimeKind.Utc));
+        return await _roomRepository.IsRoomAvailableAsync(
+            roomId,
+            checkIn,
+            checkOut);
     }
 
-    public async Task ApproveBookingAsync(
+    public async Task<bool> ApproveBookingAsync(
         Guid bookingId,
         Guid userId,
         bool isAdmin)
@@ -156,31 +116,25 @@ public class BookingService : IBookingService
         var booking = await _bookingRepository.GetByIdAsync(bookingId);
 
         if (booking == null)
-            throw new ArgumentException("Booking not found.");
+            return false;
 
         if (!isAdmin)
         {
-            var isAssigned = await _hotelManagerRepository
-                .IsManagerAssignedAsync(userId, booking.HotelId);
+            var isAssigned = await _hotelManagerRepository.IsManagerAssignedAsync(
+                userId,
+                booking.HotelId);
 
             if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You are not assigned to this hotel.");
+                return false;
         }
 
         if (booking.Status != BookingStatus.Submitted)
-            throw new ArgumentException("Only submitted bookings can be approved.");
+            return false;
 
-        var approved = await _bookingRepository.ApproveAsync(bookingId);
-
-        if (!approved)
-        {
-            throw new ArgumentException(
-                "Booking could not be approved. One or more rooms are no longer available.");
-        }
+        return await _bookingRepository.ApproveAsync(bookingId);
     }
 
-    public async Task RejectBookingAsync(
+    public async Task<bool> RejectBookingAsync(
         Guid bookingId,
         Guid userId,
         bool isAdmin)
@@ -188,47 +142,26 @@ public class BookingService : IBookingService
         var booking = await _bookingRepository.GetByIdAsync(bookingId);
 
         if (booking == null)
-            throw new ArgumentException("Booking not found.");
+            return false;
 
         if (!isAdmin)
         {
-            var isAssigned = await _hotelManagerRepository
-                .IsManagerAssignedAsync(userId, booking.HotelId);
+            var isAssigned = await _hotelManagerRepository.IsManagerAssignedAsync(
+                userId,
+                booking.HotelId);
 
             if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You are not assigned to this hotel.");
+                return false;
         }
 
         if (booking.Status != BookingStatus.Submitted)
-            throw new ArgumentException("Only submitted bookings can be rejected.");
+            return false;
 
         booking.Status = BookingStatus.Rejected;
 
         await _bookingRepository.UpdateAsync(booking);
-    }
 
-    public async Task CancelBookingAsync(Guid bookingId, Guid userId)
-    {
-        var booking = await _bookingRepository.GetByIdAsync(bookingId);
-
-        if (booking == null)
-            throw new ArgumentException("Booking not found.");
-
-        if (booking.UserId != userId)
-            throw new UnauthorizedAccessException(
-                "You cannot cancel someone else's booking.");
-
-        if (booking.Status != BookingStatus.Submitted &&
-            booking.Status != BookingStatus.Approved)
-        {
-            throw new ArgumentException(
-                "Only submitted or approved bookings can be cancelled.");
-        }
-
-        booking.Status = BookingStatus.Cancelled;
-
-        await _bookingRepository.UpdateAsync(booking);
+        return true;
     }
 
     public async Task<List<BookingDto>> GetHotelBookingsAsync(
@@ -236,48 +169,64 @@ public class BookingService : IBookingService
         Guid userId,
         bool isAdmin)
     {
-        var hotel = await _hotelRepository.GetByIdAsync(hotelId);
-
-        if (hotel == null)
-            throw new ArgumentException("Hotel not found.");
-
         if (!isAdmin)
         {
-            var isAssigned = await _hotelManagerRepository
-                .IsManagerAssignedAsync(userId, hotelId);
+            var isAssigned = await _hotelManagerRepository.IsManagerAssignedAsync(
+                userId,
+                hotelId);
 
             if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You are not assigned to this hotel.");
+                throw new UnauthorizedAccessException("You cannot access this hotel's bookings.");
         }
 
         var bookings = await _bookingRepository.GetByHotelIdAsync(hotelId);
 
-        return bookings.Select(booking => new BookingDto
-        {
-            Id = booking.Id,
-            HotelId = booking.HotelId,
-            CheckIn = booking.CheckIn,
-            CheckOut = booking.CheckOut,
-            NumberOfGuests = booking.NumberOfGuests,
-            TotalPrice = booking.TotalPrice,
-            Status = booking.Status.ToString()
-        }).ToList();
+        return bookings.Select(MapToDto).ToList();
     }
 
     public async Task<List<BookingDto>> GetMyBookingsAsync(Guid userId)
     {
         var bookings = await _bookingRepository.GetByUserIdAsync(userId);
 
-        return bookings.Select(booking => new BookingDto
+        return bookings.Select(MapToDto).ToList();
+    }
+
+    public async Task<bool> CancelBookingAsync(
+        Guid bookingId,
+        Guid userId)
+    {
+        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
+        if (booking == null || booking.UserId != userId)
+            return false;
+
+        if (booking.Status != BookingStatus.Submitted &&
+            booking.Status != BookingStatus.Approved)
+            return false;
+
+        booking.Status = BookingStatus.Cancelled;
+
+        await _bookingRepository.UpdateAsync(booking);
+
+        return true;
+    }
+
+    private static BookingDto MapToDto(Booking booking)
+    {
+        return new BookingDto
         {
             Id = booking.Id,
             HotelId = booking.HotelId,
+            HotelName = booking.Hotel.Name,
+            RoomId = booking.RoomId,
+            RoomNumber = booking.Room.RoomNumber,
+            RoomTypeName = booking.Room.RoomType.Name,
             CheckIn = booking.CheckIn,
             CheckOut = booking.CheckOut,
             NumberOfGuests = booking.NumberOfGuests,
+            PricePerNight = booking.PricePerNight,
             TotalPrice = booking.TotalPrice,
-            Status = booking.Status.ToString()
-        }).ToList();
+            Status = booking.Status
+        };
     }
 }

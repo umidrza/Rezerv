@@ -81,10 +81,10 @@ public class HotelRepository : IHotelRepository
                         r.IsActive &&
                         r.RoomType.Capacity >= requiredCapacity &&
                         (!dto.CheckIn.HasValue ||
-                         !r.BookingRooms.Any(br =>
-                            br.Booking.Status == BookingStatus.Approved &&
-                            br.Booking.CheckIn < dto.CheckOut!.Value &&
-                            br.Booking.CheckOut > dto.CheckIn.Value))));
+                         !r.Bookings.Any(b =>
+                            b.Status == BookingStatus.Approved &&
+                            b.CheckIn < dto.CheckOut &&
+                            b.CheckOut > dto.CheckIn))));
         }
 
         return query;

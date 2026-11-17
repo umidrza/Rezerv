@@ -17,7 +17,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<RoomType> RoomTypes { get; set; }
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Booking> Bookings { get; set; }
-    public DbSet<BookingRoom> BookingRooms { get; set; }
     public DbSet<HotelManager> HotelManagers { get; set; }
     public DbSet<HotelImage> HotelImages { get; set; }
 
@@ -43,29 +42,25 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .WithMany()
             .HasForeignKey(b => b.HotelId);
 
-        // Booking → BookingRooms
-        modelBuilder.Entity<BookingRoom>()
-            .HasOne(br => br.Booking)
-            .WithMany(b => b.BookingRooms)
-            .HasForeignKey(br => br.BookingId);
-
-        // Room → BookingRooms
-        modelBuilder.Entity<BookingRoom>()
-            .HasOne(br => br.Room)
-            .WithMany(r => r.BookingRooms)
-            .HasForeignKey(br => br.RoomId);
-
         // Decimal precision
         modelBuilder.Entity<RoomType>()
             .Property(rt => rt.PricePerNight)
             .HasPrecision(10, 2);
 
+        // Room → Bookings
+        modelBuilder.Entity<Booking>()
+            .HasOne(b => b.Room)
+            .WithMany(r => r.Bookings)
+            .HasForeignKey(b => b.RoomId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<Booking>()
             .Property(b => b.TotalPrice)
             .HasPrecision(10, 2);
 
-        modelBuilder.Entity<BookingRoom>()
-            .Property(br => br.PricePerNight)
+        modelBuilder.Entity<Booking>()
+            .Property(b => b.PricePerNight)
             .HasPrecision(10, 2);
 
         modelBuilder.Entity<HotelManager>(entity =>
