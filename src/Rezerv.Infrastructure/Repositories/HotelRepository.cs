@@ -20,6 +20,7 @@ public class HotelRepository : IHotelRepository
     {
         return await _context.Hotels
             .Include(h => h.PrimaryImage)
+            .Include(h => h.HotelManagers)
             .FirstOrDefaultAsync(h => h.Id == id);
     }
 
@@ -93,5 +94,14 @@ public class HotelRepository : IHotelRepository
     public async Task<int> CountSearchResultsAsync(SearchHotelsDto dto)
     {
         return await BuildSearchQuery(dto).CountAsync();
+    }
+
+    public async Task<List<Hotel>> GetByManagerIdAsync(Guid userId)
+    {
+        return await _context.Hotels
+            .Where(h => h.HotelManagers.Any(hm => hm.UserId == userId))
+            .Include(h => h.PrimaryImage)
+            .OrderBy(h => h.Name)
+            .ToListAsync();
     }
 }

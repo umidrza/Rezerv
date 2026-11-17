@@ -100,7 +100,8 @@ public class HotelService : IHotelService
             City = hotel.City,
             Country = hotel.Country,
             StarRating = hotel.StarRating,
-            PrimaryImageUrl = hotel.PrimaryImage?.ImageUrl
+            PrimaryImageUrl = hotel.PrimaryImage?.ImageUrl,
+            IsActive = hotel.IsActive
         };
     }
 
@@ -177,4 +178,105 @@ public class HotelService : IHotelService
             TotalPages = (int)Math.Ceiling((double)totalCount / dto.PageSize)
         };
     }
+
+    public async Task<List<HotelDto>> GetMyHotelsAsync(Guid userId, bool isAdmin)
+    {
+        var hotels = isAdmin
+            ? await _hotelRepository.GetAllAsync()
+            : await _hotelRepository.GetByManagerIdAsync(userId);
+
+        return hotels.Select(MapToDto).ToList();
+    }
+
+    public async Task<HotelDto> UpdateHotelAsync(
+        Guid hotelId,
+        UpdateHotelDto dto,
+        Guid userId,
+        bool isAdmin)
+    {
+        var hotel = await _hotelRepository.GetByIdAsync(hotelId);
+
+        if (hotel == null)
+            throw new KeyNotFoundException("Hotel not found.");
+
+        // Check permissions
+        if (!isAdmin && !hotel.HotelManagers.Any(hm => hm.UserId == userId))
+            throw new UnauthorizedAccessException("You cannot manage this hotel.");
+
+        // Validate input
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new ArgumentException("Hotel name is required.");
+
+        if (dto.StarRating < 1 || dto.StarRating > 5)
+            throw new ArgumentException("Star rating must be between 1 and 5.");
+
+        if (!string.IsNullOrWhiteSpace(dto.PrimaryImageUrl))
+        {
+            if (!Uri.TryCreate(dto.PrimaryImageUrl, UriKind.Absolute, out var imageUri) ||
+                (imageUri.Scheme != Uri.UriSchemeHttp &&
+                 imageUri.Scheme != Uri.UriSchemeHttps))
+            {
+                throw new ArgumentException("Invalid primary image URL.");
+            }
+        }
+
+        hotel.Name = dto.Name;
+        hotel.Description = dto.Description;
+        hotel.Address = dto.Address;
+        hotel.City = dto.City;
+        hotel.Country = dto.Country;
+        hotel.StarRating = dto.StarRating;
+
+        // Update or create primary image
+        if (!string.IsNullOrWhiteSpace(dto.PrimaryImageUrl))
+        {
+            if (hotel.PrimaryImage != null)
+            {
+                hotel.PrimaryImage.ImageUrl = dto.PrimaryImageUrl;
+
+                await _hotelImageRepository.UpdateRangeAsync(
+                    new List<HotelImage> { hotel.PrimaryImage });
+            }
+            else
+            {
+                var image = new HotelImage
+                {
+                    Id = Guid.NewGuid(),
+                    HotelId = hotel.Id,
+                    ImageUrl = dto.PrimaryImageUrl
+                };
+
+                await _hotelImageRepository.AddAsync(image);
+
+                hotel.PrimaryImageId = image.Id;
+                hotel.PrimaryImage = image;
+            }
+        }
+
+        await _hotelRepository.UpdateAsync(hotel);
+
+        return MapToDto(hotel);
+    }
+
+
+    public async Task SetHotelStatusAsync(
+        Guid hotelId,
+        bool isActive,
+        Guid userId,
+        bool isAdmin)
+    {
+        var hotel = await _hotelRepository.GetByIdAsync(hotelId);
+
+        if (hotel == null)
+            throw new KeyNotFoundException("Hotel not found.");
+
+        if (!isAdmin && !hotel.HotelManagers.Any(hm => hm.UserId == userId))
+            throw new UnauthorizedAccessException(
+                "You cannot manage this hotel.");
+
+        hotel.IsActive = isActive;
+
+        await _hotelRepository.UpdateAsync(hotel);
+    }
+
 }

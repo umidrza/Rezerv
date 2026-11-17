@@ -1,3 +1,4 @@
+
 export interface Hotel {
   id: string;
   name: string;
@@ -7,6 +8,7 @@ export interface Hotel {
   country: string;
   starRating: number;
   primaryImageUrl: string | null;
+  isActive: boolean;
 }
 
 export interface SearchHotelsParams {
@@ -25,4 +27,14 @@ export interface PaginatedResult<T> {
   pageSize: number;
   totalCount: number;
   totalPages: number;
+}
+
+export interface UpdateHotelRequest {
+  name: string;
+  description: string;
+  address: string;
+  city: string;
+  country: string;
+  starRating: number;
+  primaryImageUrl?: string;
 }

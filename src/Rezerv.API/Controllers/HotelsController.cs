@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.DTOs.Hotel;
 using Rezerv.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Rezerv.API.Controllers;
 
@@ -64,4 +65,102 @@ public class HotelsController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
+
+    [HttpGet("my-hotels")]
+    [Authorize(Roles = "Admin,HotelManager")]
+    public async Task<IActionResult> GetMyHotels()
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+
+        var isAdmin = User.IsInRole("Admin");
+
+        var hotels = await _hotelService.GetMyHotelsAsync(userId, isAdmin);
+
+        return Ok(hotels);
+    }
+
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin,HotelManager")]
+    public async Task<IActionResult> UpdateHotel(
+        Guid id,
+        UpdateHotelDto dto)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+
+        var isAdmin = User.IsInRole("Admin");
+
+        try
+        {
+            var hotel = await _hotelService.UpdateHotelAsync(
+                id,
+                dto,
+                userId,
+                isAdmin);
+
+            return Ok(hotel);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+
+    [HttpPut("{id:guid}/activate")]
+    [Authorize(Roles = "Admin,HotelManager")]
+    public async Task<IActionResult> ActivateHotel(Guid id)
+    {
+        return await ChangeHotelStatus(id, true);
+    }
+
+    [HttpPut("{id:guid}/deactivate")]
+    [Authorize(Roles = "Admin,HotelManager")]
+    public async Task<IActionResult> DeactivateHotel(Guid id)
+    {
+        return await ChangeHotelStatus(id, false);
+    }
+
+    private async Task<IActionResult> ChangeHotelStatus(
+        Guid id,
+        bool isActive)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+
+        var isAdmin = User.IsInRole("Admin");
+
+        try
+        {
+            await _hotelService.SetHotelStatusAsync(
+                id, isActive, userId, isAdmin);
+
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
 }

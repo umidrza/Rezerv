@@ -1,52 +1,90 @@
+
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 
 interface AuthContextType {
-  token: string | null;
-  isAuthenticated: boolean;
-  login: (token: string) => void;
-  logout: () => void;
+    token: string | null;
+    isAuthenticated: boolean;
+    isAdmin: boolean;
+    isHotelManager: boolean;
+    login: (token: string) => void;
+    logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
-  children: ReactNode;
+    children: ReactNode;
+}
+
+function getUserRoles(token: string | null): string[] {
+    if (!token) return [];
+
+    try {
+        const payload = token.split(".")[1];
+        const decoded = JSON.parse(
+            atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+        );
+
+        const roleClaim =
+            decoded.role ??
+            decoded.roles ??
+            decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+
+        if (Array.isArray(roleClaim)) {
+            return roleClaim;
+        }
+
+        return typeof roleClaim === "string" ? [roleClaim] : [];
+    } catch {
+        return [];
+    }
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [token, setToken] = useState<string | null>(
-    () => localStorage.getItem("token")
-  );
+    const [token, setToken] = useState<string | null>(
+        () => localStorage.getItem("token")
+    );
 
-  const isAuthenticated = Boolean(token);
+    const roles = getUserRoles(token);
 
-  function login(token: string) {
-    localStorage.setItem("token", token);
-    setToken(token);
-  }
+    const isAuthenticated = Boolean(token);
+    const isAdmin = roles.includes("Admin");
+    const isHotelManager = roles.includes("HotelManager");
 
-  function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setToken(null);
-  }
+    function login(token: string) {
+        localStorage.setItem("token", token);
+        setToken(token);
+    }
 
-  return (
-    <AuthContext.Provider
-      value={{ token, isAuthenticated, login, logout }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+    function logout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setToken(null);
+    }
+
+    return (
+        <AuthContext.Provider
+            value={{
+                token,
+                isAuthenticated,
+                isAdmin,
+                isHotelManager,
+                login,
+                logout,
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
+    const context = useContext(AuthContext);
 
-  if (!context) {
-    throw new Error("useAuth must be used inside AuthProvider.");
-  }
+    if (!context) {
+        throw new Error("useAuth must be used inside AuthProvider.");
+    }
 
-  return context;
+    return context;
 }

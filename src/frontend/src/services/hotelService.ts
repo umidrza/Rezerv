@@ -3,6 +3,7 @@ import type {
   Hotel,
   SearchHotelsParams,
   PaginatedResult,
+  UpdateHotelRequest
 } from "../types/hotel";
 import type { RoomType } from "../types/roomType";
 
@@ -50,4 +51,80 @@ export async function getRoomTypesByHotel(
   }
 
   return response.json();
+}
+
+export async function getMyHotels(
+  token: string
+): Promise<Hotel[]> {
+  const response = await fetch(`${API_BASE_URL}/hotels/my-hotels`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to load your hotels.");
+  }
+
+  return response.json();
+}
+
+export async function updateHotel(
+  id: string,
+  data: UpdateHotelRequest,
+  token: string
+): Promise<Hotel> {
+  const response = await fetch(`${API_BASE_URL}/hotels/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.message ?? "Failed to update hotel.");
+  }
+
+  return response.json();
+}
+
+export async function activateHotel(
+  id: string,
+  token: string
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE_URL}/hotels/${id}/activate`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to activate hotel.");
+  }
+}
+
+export async function deactivateHotel(
+  id: string,
+  token: string
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE_URL}/hotels/${id}/deactivate`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to deactivate hotel.");
+  }
 }

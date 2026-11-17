@@ -10,4 +10,5 @@ public class HotelDto
     public string Country { get; set; } = string.Empty;
     public int StarRating { get; set; }
     public string? PrimaryImageUrl { get; set; }
+    public bool IsActive { get; set; }
 }
