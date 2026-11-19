@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Rezerv.Infrastructure.Settings;
 using Rezerv.Infrastructure.Services;
+using Rezerv.Infrastructure.Data.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -113,6 +114,7 @@ app.MapGet("/health", () =>
     });
 });
 
+
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider
@@ -128,9 +130,20 @@ using (var scope = app.Services.CreateScope())
     var userManager = scope.ServiceProvider
         .GetRequiredService<UserManager<ApplicationUser>>();
 
+    // Admin account is seeded in every environment
     await AdminSeeder.SeedAdminAsync(
         userManager,
         app.Configuration);
+
+    // Sample data is seeded only in Development
+    if (app.Environment.IsDevelopment())
+    {
+        await DevelopmentDataSeeder.SeedAsync(
+            dbContext,
+            userManager,
+            app.Configuration);
+    }
 }
+
 
 app.Run();

@@ -216,6 +216,7 @@ public class BookingService : IBookingService
         return new BookingDto
         {
             Id = booking.Id,
+            UserId = booking.UserId,
             HotelId = booking.HotelId,
             HotelName = booking.Hotel.Name,
             RoomId = booking.RoomId,

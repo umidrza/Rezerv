@@ -32,3 +32,6 @@ secrets.json
 # OS files
 .DS_Store
 Thumbs.db
+
+# Configuration files
+**/appsettings.Development.json
