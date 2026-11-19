@@ -7,6 +7,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     isAdmin: boolean;
     isHotelManager: boolean;
+    isCustomer: boolean;
     login: (token: string) => void;
     logout: () => void;
 }
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const isAuthenticated = Boolean(token);
     const isAdmin = roles.includes("Admin");
     const isHotelManager = roles.includes("HotelManager");
+    const isCustomer = roles.includes("Customer");
 
     function login(token: string) {
         localStorage.setItem("token", token);
@@ -70,6 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 isAuthenticated,
                 isAdmin,
                 isHotelManager,
+                isCustomer,
                 login,
                 logout,
             }}

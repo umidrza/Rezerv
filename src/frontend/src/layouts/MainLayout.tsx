@@ -7,6 +7,7 @@ export default function MainLayout() {
         isAuthenticated,
         isAdmin,
         isHotelManager,
+        isCustomer,
         logout,
     } = useAuth();
 
@@ -31,12 +32,14 @@ export default function MainLayout() {
                     <nav className="flex items-center gap-6">
                         {isAuthenticated ? (
                             <>
-                                <Link
-                                    to="/my-bookings"
-                                    className="text-sm font-medium text-slate-700 hover:text-orange-500"
-                                >
-                                    My Bookings
-                                </Link>
+                                {isCustomer && (
+                                    <Link
+                                        to="/my-bookings"
+                                        className="text-sm font-medium text-slate-700 hover:text-orange-500"
+                                    >
+                                        My Bookings
+                                    </Link>
+                                )}
 
                                 {(isAdmin || isHotelManager) && (
                                     <Link

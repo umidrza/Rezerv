@@ -22,11 +22,32 @@ export default function App() {
 
           <Route path="/hotels/:id" element={<HotelDetailsPage />} />
 
+          {/* Authenticated users */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/my-bookings" element={<MyBookingsPage />} />
-            <Route path="/bookings/:id" element={<BookingDetailsPage />}/>
-            <Route path="/hotels/:hotelId/bookings" element={<HotelBookingsPage  />}/>
-            <Route path="/my-hotels" element={<MyHotelsPage  />}/>
+            <Route
+              path="/bookings/:id"
+              element={<BookingDetailsPage />}
+            />
+          </Route>
+
+          {/* Customer only */}
+          <Route element={<ProtectedRoute allowedRoles={["Customer"]} />}>
+            <Route
+              path="/my-bookings"
+              element={<MyBookingsPage />}
+            />
+          </Route>
+
+          {/* Admin and HotelManager */}
+          <Route element={<ProtectedRoute allowedRoles={["Admin", "HotelManager"]} />}>
+            <Route
+              path="/my-hotels"
+              element={<MyHotelsPage />}
+            />
+            <Route
+              path="/hotels/:hotelId/bookings"
+              element={<HotelBookingsPage />}
+            />
           </Route>
         </Route>
       </Routes>

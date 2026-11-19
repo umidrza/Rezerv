@@ -35,4 +35,9 @@ public interface IBookingService
     Task<bool> CancelBookingAsync(
         Guid bookingId,
         Guid userId);
+
+    Task<BookingDto?> GetBookingForUserAsync(
+        Guid bookingId,
+        Guid userId,
+        bool isAdmin);
 }

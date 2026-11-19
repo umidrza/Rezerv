@@ -125,7 +125,8 @@ public class BookingService : IBookingService
                 booking.HotelId);
 
             if (!isAssigned)
-                return false;
+                throw new UnauthorizedAccessException(
+                    "You cannot manage this hotel's bookings.");
         }
 
         if (booking.Status != BookingStatus.Submitted)
@@ -151,7 +152,8 @@ public class BookingService : IBookingService
                 booking.HotelId);
 
             if (!isAssigned)
-                return false;
+                throw new UnauthorizedAccessException(
+                    "You cannot manage this hotel's bookings.");
         }
 
         if (booking.Status != BookingStatus.Submitted)
@@ -211,6 +213,30 @@ public class BookingService : IBookingService
         return true;
     }
 
+    public async Task<BookingDto?> GetBookingForUserAsync(
+        Guid bookingId,
+        Guid userId,
+        bool isAdmin)
+    {
+        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+
+        if (booking == null)
+            return null;
+
+        if (!isAdmin && booking.UserId != userId)
+        {
+            var isAssigned = await _hotelManagerRepository.IsManagerAssignedAsync(
+                userId,
+                booking.HotelId);
+
+            if (!isAssigned)
+                throw new UnauthorizedAccessException(
+                    "You cannot access this booking.");
+        }
+
+        return MapToDto(booking);
+    }
+
     private static BookingDto MapToDto(Booking booking)
     {
         return new BookingDto
@@ -230,4 +256,5 @@ public class BookingService : IBookingService
             Status = booking.Status
         };
     }
+
 }
