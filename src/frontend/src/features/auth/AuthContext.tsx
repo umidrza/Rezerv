@@ -17,29 +17,43 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
+
 function getUserRoles(token: string | null): string[] {
     if (!token) return [];
 
     try {
         const payload = token.split(".")[1];
-        const decoded = JSON.parse(
-            atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
-        );
 
-        const roleClaim =
-            decoded.role ??
-            decoded.roles ??
-            decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+        if (!payload) return [];
 
-        if (Array.isArray(roleClaim)) {
-            return roleClaim;
-        }
+        const normalizedPayload = payload
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
 
-        return typeof roleClaim === "string" ? [roleClaim] : [];
+        const decoded = JSON.parse(atob(normalizedPayload));
+
+        const roleClaims = [
+            decoded.role,
+            decoded.roles,
+            decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
+        ];
+
+        return [
+            ...new Set(
+                roleClaims.flatMap((claim) =>
+                    Array.isArray(claim)
+                        ? claim
+                        : typeof claim === "string"
+                            ? [claim]
+                            : []
+                )
+            ),
+        ];
     } catch {
         return [];
     }
 }
+
 
 function isTokenValid(token: string | null): boolean {
     if (!token) return false;
