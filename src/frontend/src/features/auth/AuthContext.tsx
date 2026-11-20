@@ -76,6 +76,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const isCustomer = roles.includes("Customer");
 
     const login = useCallback((token: string) => {
+        if (!isTokenValid(token)) {
+            throw new Error("Invalid or expired token.");
+        }
+
         localStorage.setItem("token", token);
         setToken(token);
     }, []);
