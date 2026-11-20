@@ -1,7 +1,14 @@
+
 import { useEffect, useState } from "react";
-import { getMyBookings } from "../../../services/bookingService";
-import type { Booking } from "../../../types/booking";
 import { Link } from "react-router";
+
+import {
+  cancelBooking,
+  getMyBookings,
+} from "../../../services/bookingService";
+
+import type { Booking } from "../../../types/booking";
+import { useAuth } from "../../auth/AuthContext";
 
 const bookingStatuses = [
   "Draft",
@@ -38,14 +45,47 @@ function formatDate(date: string) {
 }
 
 export default function MyBookingsPage() {
+  const { token } = useAuth();
+
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
+
+  async function handleCancelBooking(bookingId: string) {
+    if (!token || cancellingBookingId) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this booking?"
+    );
+
+    if (!confirmed) return;
+
+    setCancellingBookingId(bookingId);
+
+    try {
+      await cancelBooking(bookingId, token);
+
+      setBookings((currentBookings) =>
+        currentBookings.map((booking) =>
+          booking.id === bookingId
+            ? { ...booking, status: "Cancelled" }
+            : booking
+        )
+      );
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to cancel booking."
+      );
+    } finally {
+      setCancellingBookingId(null);
+    }
+  }
 
   useEffect(() => {
     async function loadBookings() {
-      const token = localStorage.getItem("token");
-
       if (!token) {
         setError("Please log in to view your bookings.");
         setLoading(false);
@@ -67,10 +107,14 @@ export default function MyBookingsPage() {
     }
 
     loadBookings();
-  }, []);
+  }, [token]);
 
   if (loading) {
-    return <div className="py-12 text-center">Loading your bookings...</div>;
+    return (
+      <div className="py-12 text-center">
+        Loading your bookings...
+      </div>
+    );
   }
 
   if (error) {
@@ -92,6 +136,7 @@ export default function MyBookingsPage() {
           <h2 className="text-lg font-semibold text-slate-800">
             No bookings yet
           </h2>
+
           <p className="mt-2 text-slate-500">
             Your bookings will appear here after you submit a booking request.
           </p>
@@ -100,6 +145,10 @@ export default function MyBookingsPage() {
         <div className="space-y-4">
           {bookings.map((booking) => {
             const status = getStatusLabel(booking.status);
+            const canCancel =
+              status === "Submitted" || status === "Approved";
+            const isCancelling =
+              cancellingBookingId === booking.id;
 
             return (
               <div
@@ -108,7 +157,10 @@ export default function MyBookingsPage() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm text-slate-500">Booking ID</p>
+                    <p className="text-sm text-slate-500">
+                      Booking ID
+                    </p>
+
                     <p className="font-medium text-slate-800">
                       {booking.id}
                     </p>
@@ -123,38 +175,68 @@ export default function MyBookingsPage() {
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-3">
                   <div>
-                    <p className="text-sm text-slate-500">Check-in</p>
+                    <p className="text-sm text-slate-500">
+                      Check-in
+                    </p>
+
                     <p className="font-medium">
                       {formatDate(booking.checkIn)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-slate-500">Check-out</p>
+                    <p className="text-sm text-slate-500">
+                      Check-out
+                    </p>
+
                     <p className="font-medium">
                       {formatDate(booking.checkOut)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-slate-500">Guests</p>
-                    <p className="font-medium">{booking.numberOfGuests}</p>
+                    <p className="text-sm text-slate-500">
+                      Guests
+                    </p>
+
+                    <p className="font-medium">
+                      {booking.numberOfGuests}
+                    </p>
                   </div>
                 </div>
 
                 <div className="mt-5 border-t border-slate-100 pt-4">
-                  <p className="text-sm text-slate-500">Total price</p>
+                  <p className="text-sm text-slate-500">
+                    Total price
+                  </p>
+
                   <p className="text-xl font-bold text-orange-600">
                     {booking.totalPrice.toFixed(2)}
                   </p>
                 </div>
 
-                <Link
-                  to={`/bookings/${booking.id}`}
-                  className="mt-4 inline-block font-medium text-orange-600 hover:text-orange-700"
-                >
-                  View details →
-                </Link>
+                <div className="mt-4 flex flex-wrap items-center gap-4">
+                  <Link
+                    to={`/bookings/${booking.id}`}
+                    className="font-medium text-orange-600 hover:text-orange-700"
+                  >
+                    View details →
+                  </Link>
+
+                  {canCancel && (
+                    <button
+                      onClick={() =>
+                        handleCancelBooking(booking.id)
+                      }
+                      disabled={isCancelling || cancellingBookingId !== null}
+                      className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isCancelling
+                        ? "Cancelling..."
+                        : "Cancel Booking"}
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}

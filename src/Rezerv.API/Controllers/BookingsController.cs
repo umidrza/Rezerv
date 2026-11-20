@@ -194,14 +194,23 @@ public class BookingsController : ControllerBase
         if (userId == null)
             return Unauthorized();
 
-        var result = await _bookingService.CancelBookingAsync(
-            id,
-            userId.Value);
-
-        if (!result)
-            return BadRequest(new { message = "Booking could not be cancelled." });
-
-        return NoContent();
+        try
+        {
+            await _bookingService.CancelBookingAsync(id, userId.Value);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     private Guid? GetUserId()
