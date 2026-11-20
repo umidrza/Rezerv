@@ -28,7 +28,10 @@ export async function apiRequest<T>(
 
     if (!response.ok) {
         const error = await response.json().catch(() => null);
-        throw new Error(error?.message || "Something went wrong.");
+
+        throw new Error(
+            error?.message || `Request failed with status ${response.status}.`
+        );
     }
 
     if (response.status === 204) {

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 
 interface AuthContextType {
@@ -41,10 +41,32 @@ function getUserRoles(token: string | null): string[] {
     }
 }
 
+function isTokenValid(token: string | null): boolean {
+    if (!token) return false;
+
+    try {
+        const payload = token.split(".")[1];
+        const decoded = JSON.parse(
+            atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+        );
+
+        return decoded.exp && decoded.exp > Date.now() / 1000;
+    } catch {
+        return false;
+    }
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
-    const [token, setToken] = useState<string | null>(
-        () => localStorage.getItem("token")
-    );
+    const [token, setToken] = useState<string | null>(() => {
+        const savedToken = localStorage.getItem("token");
+
+        if (!isTokenValid(savedToken)) {
+            localStorage.removeItem("token");
+            return null;
+        }
+
+        return savedToken;
+    });
 
     const roles = getUserRoles(token);
 
@@ -53,16 +75,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const isHotelManager = roles.includes("HotelManager");
     const isCustomer = roles.includes("Customer");
 
-    function login(token: string) {
+    const login = useCallback((token: string) => {
         localStorage.setItem("token", token);
         setToken(token);
-    }
+    }, []);
 
-    function logout() {
+    const logout = useCallback(() => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setToken(null);
-    }
+    }, []);
 
     useEffect(() => {
         function handleUnauthorized() {
@@ -74,7 +96,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return () => {
             window.removeEventListener("auth:unauthorized", handleUnauthorized);
         };
-    }, []);
+    }, [logout]);
 
     return (
         <AuthContext.Provider
