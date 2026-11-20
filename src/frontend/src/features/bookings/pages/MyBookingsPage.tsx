@@ -1,6 +1,5 @@
 
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 
 import {
   cancelBooking,
@@ -10,39 +9,8 @@ import {
 import type { Booking } from "../../../types/booking";
 import { useAuth } from "../../auth/AuthContext";
 
-const bookingStatuses = [
-  "Draft",
-  "Submitted",
-  "Approved",
-  "Rejected",
-  "Cancelled",
-];
-
-function getStatusLabel(status: string | number): string {
-  if (typeof status === "number") {
-    return bookingStatuses[status] ?? "Unknown";
-  }
-
-  return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function getStatusStyle(status: string) {
-  switch (status.toLowerCase()) {
-    case "approved":
-      return "bg-green-100 text-green-700";
-    case "submitted":
-      return "bg-orange-100 text-orange-700";
-    case "rejected":
-    case "cancelled":
-      return "bg-red-100 text-red-700";
-    default:
-      return "bg-slate-100 text-slate-700";
-  }
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString();
-}
+import BookingCard from "../components/BookingCard";
+import BookingEmptyState from "../components/BookingEmptyState";
 
 export default function MyBookingsPage() {
   const { token } = useAuth();
@@ -50,39 +18,8 @@ export default function MyBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
-
-  async function handleCancelBooking(bookingId: string) {
-    if (!token || cancellingBookingId) return;
-
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel this booking?"
-    );
-
-    if (!confirmed) return;
-
-    setCancellingBookingId(bookingId);
-
-    try {
-      await cancelBooking(bookingId, token);
-
-      setBookings((currentBookings) =>
-        currentBookings.map((booking) =>
-          booking.id === bookingId
-            ? { ...booking, status: "Cancelled" }
-            : booking
-        )
-      );
-    } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to cancel booking."
-      );
-    } finally {
-      setCancellingBookingId(null);
-    }
-  }
+  const [cancellingBookingId, setCancellingBookingId] =
+    useState<string | null>(null);
 
   useEffect(() => {
     async function loadBookings() {
@@ -93,6 +30,9 @@ export default function MyBookingsPage() {
       }
 
       try {
+        setLoading(true);
+        setError("");
+
         const result = await getMyBookings(token);
         setBookings(result);
       } catch (err) {
@@ -109,9 +49,41 @@ export default function MyBookingsPage() {
     loadBookings();
   }, [token]);
 
+  async function handleCancelBooking(bookingId: string) {
+    if (!token || cancellingBookingId !== null) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this booking?"
+    );
+
+    if (!confirmed) return;
+
+    setCancellingBookingId(bookingId);
+
+    try {
+      await cancelBooking(bookingId, token);
+
+      setBookings((current) =>
+        current.map((booking) =>
+          booking.id === bookingId
+            ? { ...booking, status: "Cancelled" }
+            : booking
+        )
+      );
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Failed to cancel booking."
+      );
+    } finally {
+      setCancellingBookingId(null);
+    }
+  }
+
   if (loading) {
     return (
-      <div className="py-12 text-center">
+      <div className="py-12 text-center text-slate-500">
         Loading your bookings...
       </div>
     );
@@ -132,114 +104,18 @@ export default function MyBookingsPage() {
       </h1>
 
       {bookings.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-          <h2 className="text-lg font-semibold text-slate-800">
-            No bookings yet
-          </h2>
-
-          <p className="mt-2 text-slate-500">
-            Your bookings will appear here after you submit a booking request.
-          </p>
-        </div>
+        <BookingEmptyState />
       ) : (
         <div className="space-y-4">
-          {bookings.map((booking) => {
-            const status = getStatusLabel(booking.status);
-            const canCancel =
-              status === "Submitted" || status === "Approved";
-            const isCancelling =
-              cancellingBookingId === booking.id;
-
-            return (
-              <div
-                key={booking.id}
-                className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm text-slate-500">
-                      Booking ID
-                    </p>
-
-                    <p className="font-medium text-slate-800">
-                      {booking.id}
-                    </p>
-                  </div>
-
-                  <span
-                    className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusStyle(status)}`}
-                  >
-                    {status}
-                  </span>
-                </div>
-
-                <div className="mt-5 grid gap-4 sm:grid-cols-3">
-                  <div>
-                    <p className="text-sm text-slate-500">
-                      Check-in
-                    </p>
-
-                    <p className="font-medium">
-                      {formatDate(booking.checkIn)}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-slate-500">
-                      Check-out
-                    </p>
-
-                    <p className="font-medium">
-                      {formatDate(booking.checkOut)}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-slate-500">
-                      Guests
-                    </p>
-
-                    <p className="font-medium">
-                      {booking.numberOfGuests}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-5 border-t border-slate-100 pt-4">
-                  <p className="text-sm text-slate-500">
-                    Total price
-                  </p>
-
-                  <p className="text-xl font-bold text-orange-600">
-                    {booking.totalPrice.toFixed(2)}
-                  </p>
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-4">
-                  <Link
-                    to={`/bookings/${booking.id}`}
-                    className="font-medium text-orange-600 hover:text-orange-700"
-                  >
-                    View details →
-                  </Link>
-
-                  {canCancel && (
-                    <button
-                      onClick={() =>
-                        handleCancelBooking(booking.id)
-                      }
-                      disabled={isCancelling || cancellingBookingId !== null}
-                      className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isCancelling
-                        ? "Cancelling..."
-                        : "Cancel Booking"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {bookings.map((booking) => (
+            <BookingCard
+              key={booking.id}
+              booking={booking}
+              onCancel={handleCancelBooking}
+              isCancelling={cancellingBookingId === booking.id}
+              disabled={cancellingBookingId !== null}
+            />
+          ))}
         </div>
       )}
     </div>
