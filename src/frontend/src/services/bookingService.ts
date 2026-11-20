@@ -92,3 +92,13 @@ export const rejectBooking = async (
         token
     );
 };
+
+export const cancelBooking = async (
+    bookingId: string,
+    token: string
+): Promise<void> =>
+    apiRequest<void>(
+        `/bookings/${bookingId}/cancel`,
+        { method: "PUT" },
+        token
+    );
