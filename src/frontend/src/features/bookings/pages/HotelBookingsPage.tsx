@@ -1,189 +1,133 @@
-import { useEffect, useState } from "react";
+
 import { useParams } from "react-router";
-import { getHotelBookings } from "../../../services/bookingService";
-import { approveBooking, rejectBooking } from "../../../services/bookingService";
-import type { Booking } from "../../../types/booking";
 import { useAuth } from "../../auth/AuthContext";
+
+import { useHotelBookings } from "../hooks/useHotelBookings";
+import { useBookingActions } from "../hooks/useBookingActions";
+
+import BookingPageHeader from "../components/BookingPageHeader";
+import BookingList from "../components/BookingList";
+import BookingSection from "../components/BookingSection";
+import BookingStatusBadge from "../components/BookingStatusBadge";
+import BookingDates from "../components/BookingDates";
+import BookingGuestInfo from "../components/BookingGuestInfo";
+import BookingPriceSummary from "../components/BookingPriceSummary";
+import BookingActions from "../components/BookingActions";
+import LoadingState from "../../../components/LoadingState";
+import ErrorMessage from "../../../components/ErrorMessage";
 
 export default function HotelBookingsPage() {
     const { hotelId } = useParams<{ hotelId: string }>();
     const { token } = useAuth();
 
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    const {
+        bookings,
+        setBookings,
+        loading,
+        error: loadingError,
+    } = useHotelBookings(hotelId, token);
 
-    const loadBookings = async () => {
-        if (!hotelId || !token) return;
+    const {
+        processingBookingId,
+        processingAction,
+        error: actionError,
+        executeAction,
+    } = useBookingActions(token);
 
-        try {
-            setLoading(true);
-            setError("");
-
-            const result = await getHotelBookings(hotelId, token);
-            setBookings(result);
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Failed to load bookings."
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        loadBookings();
-    }, [hotelId, token]);
-
-    const handleAction = async (
+    async function handleAction(
         bookingId: string,
         action: "approve" | "reject"
-    ) => {
-        if (!token) return;
+    ) {
+        if (processingBookingId !== null) return;
 
-        try {
-            if (action === "approve") {
-                await approveBooking(bookingId, token);
-            } else {
-                await rejectBooking(bookingId, token);
-            }
+        const success = await executeAction(bookingId, action);
 
-            await loadBookings();
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Failed to update booking."
+        if (success) {
+            setBookings((current) =>
+                current.map((booking) =>
+                    booking.id === bookingId
+                        ? {
+                            ...booking,
+                            status: action === "approve"
+                                ? "Approved"
+                                : "Rejected",
+                        }
+                        : booking
+                )
             );
         }
-    };
+    }
 
-    const getStatus = (status: string | number) => {
-        const statuses = [
-            "Draft",
-            "Submitted",
-            "Approved",
-            "Rejected",
-            "Cancelled",
-        ];
-
-        return typeof status === "number"
-            ? statuses[status] ?? "Unknown"
-            : status;
-    };
-
-    if (loading) return <p className="p-6">Loading bookings...</p>;
+    if (loading) {
+        return <LoadingState message="Loading hotel bookings..." />;
+    }
 
     return (
-        <div className="mx-auto max-w-6xl p-6">
-            <h1 className="text-3xl font-bold">Hotel Bookings</h1>
+        <div className="mx-auto max-w-6xl px-4 py-10">
+            <BookingPageHeader
+                title="Hotel Bookings"
+                description="Review and manage booking requests for this hotel."
+            />
 
-            {error && (
-                <p className="mt-4 rounded-lg bg-red-100 p-3 text-red-700">
-                    {error}
-                </p>
-            )}
+            <div className="mb-6">
+                <ErrorMessage message={loadingError || actionError} />
+            </div>
 
             {bookings.length === 0 ? (
-                <p className="mt-6 text-gray-500">
+                <p className="mt-6 text-slate-500">
                     No booking requests found.
                 </p>
             ) : (
-                <div className="mt-6 space-y-4">
-                    {bookings.map((booking) => {
-                        const status = getStatus(booking.status);
+                <BookingList>
+                    {bookings.map((booking) => (
+                        <BookingSection
+                            key={booking.id}
+                            title={booking.hotelName}
+                        >
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <p className="text-sm text-slate-500">
+                                    Room {booking.roomNumber} · {booking.roomTypeName}
+                                </p>
 
-                        return (
-                            <div
-                                key={booking.id}
-                                className="rounded-xl border border-gray-200 p-5"
-                            >
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <div>
-                                        <h2 className="text-lg font-semibold">
-                                            {booking.hotelName}
-                                        </h2>
-                                        <p className="text-sm text-gray-500">
-                                            Room {booking.roomNumber} ·{" "}
-                                            {booking.roomTypeName}
-                                        </p>
-                                    </div>
-
-                                    <span className="rounded-full bg-orange-100 px-3 py-1 text-sm text-orange-700">
-                                        {status}
-                                    </span>
-                                </div>
-
-                                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                                    <div>
-                                        <p className="text-sm text-gray-500">
-                                            Check-in
-                                        </p>
-                                        <p>
-                                            {new Date(
-                                                booking.checkIn
-                                            ).toLocaleDateString()}
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-sm text-gray-500">
-                                            Check-out
-                                        </p>
-                                        <p>
-                                            {new Date(
-                                                booking.checkOut
-                                            ).toLocaleDateString()}
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-sm text-gray-500">
-                                            Guests
-                                        </p>
-                                        <p>{booking.numberOfGuests}</p>
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                                    <p className="text-lg font-bold text-orange-600">
-                                        ${booking.totalPrice.toFixed(2)}
-                                    </p>
-
-                                    {status === "Submitted" && (
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() =>
-                                                    handleAction(
-                                                        booking.id,
-                                                        "approve"
-                                                    )
-                                                }
-                                                className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-                                            >
-                                                Approve
-                                            </button>
-
-                                            <button
-                                                onClick={() =>
-                                                    handleAction(
-                                                        booking.id,
-                                                        "reject"
-                                                    )
-                                                }
-                                                className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-                                            >
-                                                Reject
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
+                                <BookingStatusBadge status={booking.status} />
                             </div>
-                        );
-                    })}
-                </div>
+
+                            <div className="mt-5">
+                                <BookingDates
+                                    checkIn={booking.checkIn}
+                                    checkOut={booking.checkOut}
+                                />
+                            </div>
+
+                            <div className="mt-5">
+                                <BookingGuestInfo
+                                    numberOfGuests={booking.numberOfGuests}
+                                />
+                            </div>
+
+                            <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-4">
+                                <BookingPriceSummary
+                                    totalPrice={booking.totalPrice}
+                                />
+
+                                {booking.status === "Submitted" && (
+                                    <BookingActions
+                                        onApprove={() => handleAction(booking.id, "approve")}
+                                        onReject={() => handleAction(booking.id, "reject")}
+                                        showApproveReject
+                                        disabled={processingBookingId !== null}
+                                        loading={processingBookingId === booking.id}
+                                        loadingAction={
+                                            processingBookingId === booking.id
+                                                ? processingAction ?? undefined
+                                                : undefined
+                                        }
+                                    />
+                                )}
+                            </div>
+                        </BookingSection>
+                    ))}
+                </BookingList>
             )}
         </div>
     );

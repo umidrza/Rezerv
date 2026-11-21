@@ -1,7 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
+
 import type { Booking } from "../../../types/booking";
 import { getBookingById } from "../../../services/bookingService";
+
+import BookingPageHeader from "../components/BookingPageHeader";
+import BookingSection from "../components/BookingSection";
+import BookingDates from "../components/BookingDates";
+import BookingGuestInfo from "../components/BookingGuestInfo";
+import BookingPriceSummary from "../components/BookingPriceSummary";
+import BookingInfo from "../components/BookingInfo";
+import DetailItem from "../components/DetailItem";
+import LoadingState from "../../../components/LoadingState";
+import ErrorMessage from "../../../components/ErrorMessage";
+import BookingStatusBadge from "../components/BookingStatusBadge";
 
 export default function BookingDetailsPage() {
     const { id } = useParams<{ id: string }>();
@@ -11,7 +23,7 @@ export default function BookingDetailsPage() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        const loadBooking = async () => {
+        async function loadBooking() {
             if (!id) {
                 setError("Booking ID is missing.");
                 setLoading(false);
@@ -19,6 +31,9 @@ export default function BookingDetailsPage() {
             }
 
             try {
+                setLoading(true);
+                setError("");
+
                 const result = await getBookingById(id);
                 setBooking(result);
             } catch (err) {
@@ -30,106 +45,88 @@ export default function BookingDetailsPage() {
             } finally {
                 setLoading(false);
             }
-        };
+        }
 
         loadBooking();
     }, [id]);
 
-    if (loading) return <p className="p-6">Loading booking...</p>;
-
-    if (error) {
-        return <p className="p-6 text-red-600">{error}</p>;
+    if (loading) {
+        return <LoadingState message="Loading booking details..." />;
     }
 
-    if (!booking) return <p className="p-6">Booking not found.</p>;
+    if (error) {
+        return (
+            <div className="mx-auto max-w-3xl px-4 py-12">
+                <ErrorMessage message={error} />
+            </div>
+        );
+    }
 
-    const statusLabels: Record<string, string> = {
-        "0": "Draft",
-        "1": "Submitted",
-        "2": "Approved",
-        "3": "Rejected",
-        "4": "Cancelled",
-        Draft: "Draft",
-        Submitted: "Submitted",
-        Approved: "Approved",
-        Rejected: "Rejected",
-        Cancelled: "Cancelled",
-    };
-
-    const status = statusLabels[String(booking.status)] ?? "Unknown";
+    if (!booking) {
+        return (
+            <div className="py-12 text-center text-slate-600">
+                Booking not found.
+            </div>
+        );
+    }
 
     return (
-        <div className="mx-auto max-w-3xl p-6">
+        <div className="mx-auto max-w-4xl px-4 py-10">
             <Link
                 to="/my-bookings"
-                className="text-orange-600 hover:underline"
+                className="font-medium text-orange-600 hover:text-orange-700"
             >
                 ← Back to my bookings
             </Link>
 
-            <h1 className="mt-6 text-3xl font-bold">
-                Booking Details
-            </h1>
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                <BookingPageHeader
+                    title="Booking Details"
+                    description="Review your booking information."
+                />
 
-            <div className="mt-6 rounded-xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">
-                        {booking.hotelName}
-                    </h2>
+                <BookingStatusBadge status={booking.status} />
+            </div>
 
-                    <span className="rounded-full bg-orange-100 px-3 py-1 text-sm text-orange-700">
-                        {status}
-                    </span>
-                </div>
+            <div className="mt-8 space-y-6">
+                <BookingSection title={booking.hotelName}>
+                    <div className="grid gap-6 sm:grid-cols-2">
+                        <DetailItem
+                            label="Room type"
+                            value={booking.roomTypeName}
+                        />
 
-                <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <p className="text-sm text-gray-500">Room</p>
-                        <p className="font-medium">
-                            {booking.roomTypeName} - Room {booking.roomNumber}
-                        </p>
+                        <DetailItem
+                            label="Room number"
+                            value={booking.roomNumber}
+                        />
+
+                        <BookingGuestInfo
+                            numberOfGuests={booking.numberOfGuests}
+                        />
                     </div>
+                </BookingSection>
 
-                    <div>
-                        <p className="text-sm text-gray-500">Guests</p>
-                        <p className="font-medium">
-                            {booking.numberOfGuests}
-                        </p>
-                    </div>
+                <BookingSection title="Stay Information">
+                    <BookingDates
+                        checkIn={booking.checkIn}
+                        checkOut={booking.checkOut}
+                    />
+                </BookingSection>
 
-                    <div>
-                        <p className="text-sm text-gray-500">Check-in</p>
-                        <p className="font-medium">
-                            {new Date(booking.checkIn).toLocaleDateString()}
-                        </p>
-                    </div>
+                <BookingSection title="Price Summary">
+                    <BookingPriceSummary
+                        pricePerNight={booking.pricePerNight}
+                        totalPrice={booking.totalPrice}
+                    />
+                </BookingSection>
 
-                    <div>
-                        <p className="text-sm text-gray-500">Check-out</p>
-                        <p className="font-medium">
-                            {new Date(booking.checkOut).toLocaleDateString()}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p className="text-sm text-gray-500">Price per night</p>
-                        <p className="font-medium">
-                            ${booking.pricePerNight.toFixed(2)}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p className="text-sm text-gray-500">Total price</p>
-                        <p className="text-xl font-bold text-orange-600">
-                            ${booking.totalPrice.toFixed(2)}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="mt-6 border-t pt-4">
-                    <p className="text-sm text-gray-500">Booking ID</p>
-                    <p className="break-all text-sm">{booking.id}</p>
-                </div>
+                <BookingSection title="Booking Information">
+                    <BookingInfo
+                        bookingId={booking.id}
+                        createdAt={booking.createdAt}
+                    />
+                </BookingSection>
             </div>
         </div>
     );

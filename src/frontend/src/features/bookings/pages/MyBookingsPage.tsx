@@ -1,56 +1,34 @@
 
-import { useEffect, useState } from "react";
-
-import {
-  cancelBooking,
-  getMyBookings,
-} from "../../../services/bookingService";
-
-import type { Booking } from "../../../types/booking";
 import { useAuth } from "../../auth/AuthContext";
 
+import { useMyBookings } from "../hooks/useMyBookings";
+import { useBookingActions } from "../hooks/useBookingActions";
+
+import BookingPageHeader from "../components/BookingPageHeader";
+import BookingList from "../components/BookingList";
 import BookingCard from "../components/BookingCard";
 import BookingEmptyState from "../components/BookingEmptyState";
+import LoadingState from "../../../components/LoadingState";
+import ErrorMessage from "../../../components/ErrorMessage";
 
 export default function MyBookingsPage() {
   const { token } = useAuth();
 
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [cancellingBookingId, setCancellingBookingId] =
-    useState<string | null>(null);
+  const {
+    bookings,
+    setBookings,
+    loading,
+    error: loadingError,
+  } = useMyBookings(token);
 
-  useEffect(() => {
-    async function loadBookings() {
-      if (!token) {
-        setError("Please log in to view your bookings.");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError("");
-
-        const result = await getMyBookings(token);
-        setBookings(result);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load your bookings."
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadBookings();
-  }, [token]);
+  const {
+    processingBookingId,
+    error: actionError,
+    executeAction,
+  } = useBookingActions(token);
 
   async function handleCancelBooking(bookingId: string) {
-    if (!token || cancellingBookingId !== null) return;
+    if (processingBookingId !== null) return;
 
     const confirmed = window.confirm(
       "Are you sure you want to cancel this booking?"
@@ -58,11 +36,9 @@ export default function MyBookingsPage() {
 
     if (!confirmed) return;
 
-    setCancellingBookingId(bookingId);
+    const success = await executeAction(bookingId, "cancel");
 
-    try {
-      await cancelBooking(bookingId, token);
-
+    if (success) {
       setBookings((current) =>
         current.map((booking) =>
           booking.id === bookingId
@@ -70,53 +46,38 @@ export default function MyBookingsPage() {
             : booking
         )
       );
-    } catch (err) {
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Failed to cancel booking."
-      );
-    } finally {
-      setCancellingBookingId(null);
     }
   }
 
   if (loading) {
-    return (
-      <div className="py-12 text-center text-slate-500">
-        Loading your bookings...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="py-12 text-center text-red-600">
-        {error}
-      </div>
-    );
+    return <LoadingState message="Loading your bookings..." />;
   }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="mb-8 text-3xl font-bold text-slate-900">
-        My Bookings
-      </h1>
+      <BookingPageHeader
+        title="My Bookings"
+        description="View and manage your hotel reservations."
+      />
+
+      <div className="mb-6">
+        <ErrorMessage message={loadingError || actionError} />
+      </div>
 
       {bookings.length === 0 ? (
         <BookingEmptyState />
       ) : (
-        <div className="space-y-4">
+        <BookingList>
           {bookings.map((booking) => (
             <BookingCard
               key={booking.id}
               booking={booking}
               onCancel={handleCancelBooking}
-              isCancelling={cancellingBookingId === booking.id}
-              disabled={cancellingBookingId !== null}
+              isCancelling={processingBookingId === booking.id}
+              disabled={processingBookingId !== null}
             />
           ))}
-        </div>
+        </BookingList>
       )}
     </div>
   );

@@ -2,7 +2,7 @@
 import {
   getStatusLabel,
   getStatusStyle,
-} from "../../../utils/bookingUtils";
+} from "../utils/bookingUtils";
 
 interface BookingStatusBadgeProps {
   status: string | number;
