@@ -1,5 +1,6 @@
 
-import { format, parseISO, startOfDay } from "date-fns";
+import { useState } from "react";
+import { format, isValid, parseISO, startOfDay } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-
 
 interface DatePickerProps {
     value: string;
@@ -24,14 +24,23 @@ export default function DatePicker({
     placeholder,
     minDate,
 }: DatePickerProps) {
-    const selectedDate = value ? parseISO(value) : undefined;
+    const [open, setOpen] = useState(false);
+
+    const parsedDate = value ? parseISO(value) : undefined;
+    const selectedDate =
+        parsedDate && isValid(parsedDate) ? parsedDate : undefined;
 
     const minimumDate = minDate
         ? startOfDay(minDate)
         : startOfDay(new Date());
 
+    function handleSelect(date: Date | undefined) {
+        onChange(date ? format(date, "yyyy-MM-dd") : "");
+        setOpen(false);
+    }
+
     return (
-        <Popover>
+        <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
@@ -49,9 +58,7 @@ export default function DatePicker({
                 <Calendar
                     mode="single"
                     selected={selectedDate}
-                    onSelect={(date) =>
-                        onChange(date ? format(date, "yyyy-MM-dd") : "")
-                    }
+                    onSelect={handleSelect}
                     disabled={{ before: minimumDate }}
                 />
             </PopoverContent>

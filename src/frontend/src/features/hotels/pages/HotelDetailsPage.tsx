@@ -10,6 +10,8 @@ import HotelHeader from "../components/HotelHeader";
 import HotelRoomList from "../components/HotelRoomList";
 import BookingPanel from "../components/BookingPanel";
 import BookingConfirmationModal from "../components/BookingConfirmationModal";
+import LoadingState from "@/components/LoadingState";
+import ErrorMessage from "@/components/ErrorMessage";
 
 export default function HotelDetailsPage() {
     const { id } = useParams<{ id: string }>();
@@ -48,19 +50,13 @@ export default function HotelDetailsPage() {
     });
 
     if (loading) {
-        return (
-            <div className="py-20 text-center text-slate-500">
-                Loading hotel details...
-            </div>
-        );
+        return <LoadingState message="Loading hotel details..." />;
     }
 
     if (hotelError || !hotel) {
         return (
             <div className="py-20 text-center">
-                <p className="text-red-600">
-                    {hotelError || "Hotel not found."}
-                </p>
+                <ErrorMessage message={hotelError || "Hotel not found."} />
 
                 <Link
                     to="/hotels"
