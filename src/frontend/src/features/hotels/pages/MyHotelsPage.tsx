@@ -7,7 +7,7 @@ import {
     activateHotel,
     deactivateHotel,
 } from "../../../services/hotelService";
-import type { UpdateHotelRequest } from "../../../services/hotelService";
+import type { UpdateHotelRequest } from "../../../types/hotel";
 import type { Hotel } from "../../../types/hotel";
 import { useAuth } from "../../auth/AuthContext";
 
@@ -200,11 +200,10 @@ export default function MyHotelsPage() {
                                         {hotel.name}
                                     </h2>
 
-                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                        hotel.isActive
+                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${hotel.isActive
                                             ? "bg-green-100 text-green-700"
                                             : "bg-red-100 text-red-700"
-                                    }`}>
+                                        }`}>
                                         {hotel.isActive ? "Active" : "Inactive"}
                                     </span>
                                 </div>
@@ -226,11 +225,10 @@ export default function MyHotelsPage() {
 
                                 <button
                                     onClick={() => handleStatusChange(hotel)}
-                                    className={`mt-3 w-full rounded-lg px-4 py-3 font-semibold text-white ${
-                                        hotel.isActive
+                                    className={`mt-3 w-full rounded-lg px-4 py-3 font-semibold text-white ${hotel.isActive
                                             ? "bg-red-500 hover:bg-red-600"
                                             : "bg-green-600 hover:bg-green-700"
-                                    }`}
+                                        }`}
                                 >
                                     {hotel.isActive ? "Deactivate Hotel" : "Activate Hotel"}
                                 </button>
