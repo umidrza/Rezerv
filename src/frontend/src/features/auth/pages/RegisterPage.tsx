@@ -3,15 +3,8 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 
-import API_BASE_URL from "../../../services/api";
+import { registerUser } from "../../../services/authService";
 import { useAuth } from "../AuthContext";
-
-interface AuthResponse {
-    userId: string;
-    fullName: string;
-    email: string;
-    token: string;
-}
 
 export default function RegisterPage() {
     const { login } = useAuth();
@@ -27,7 +20,6 @@ export default function RegisterPage() {
 
     async function handleSubmit(e: FormEvent<HTMLFormElement>) {
         e.preventDefault();
-
         setError("");
 
         if (password !== confirmPassword) {
@@ -38,28 +30,9 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/register`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    fullName,
-                    email,
-                    password,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Registration failed.");
-            }
-
-            const result: AuthResponse = data;
+            const result = await registerUser(fullName, email, password);
 
             login(result.token);
-
             navigate("/");
         } catch (err) {
             setError(
@@ -79,7 +52,6 @@ export default function RegisterPage() {
                     <h1 className="text-3xl font-bold text-slate-900">
                         Create an account
                     </h1>
-
                     <p className="mt-2 text-slate-500">
                         Join Rezerv and start exploring hotels.
                     </p>
@@ -87,13 +59,9 @@ export default function RegisterPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label
-                            htmlFor="fullName"
-                            className="mb-2 block text-sm font-medium text-slate-700"
-                        >
+                        <label htmlFor="fullName" className="mb-2 block text-sm font-medium text-slate-700">
                             Full name
                         </label>
-
                         <input
                             id="fullName"
                             type="text"
@@ -107,13 +75,9 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label
-                            htmlFor="email"
-                            className="mb-2 block text-sm font-medium text-slate-700"
-                        >
+                        <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
                             Email address
                         </label>
-
                         <input
                             id="email"
                             type="email"
@@ -127,13 +91,9 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label
-                            htmlFor="password"
-                            className="mb-2 block text-sm font-medium text-slate-700"
-                        >
+                        <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">
                             Password
                         </label>
-
                         <input
                             id="password"
                             type="password"
@@ -148,13 +108,9 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                        <label
-                            htmlFor="confirmPassword"
-                            className="mb-2 block text-sm font-medium text-slate-700"
-                        >
+                        <label htmlFor="confirmPassword" className="mb-2 block text-sm font-medium text-slate-700">
                             Confirm password
                         </label>
-
                         <input
                             id="confirmPassword"
                             type="password"
@@ -185,10 +141,7 @@ export default function RegisterPage() {
 
                 <p className="mt-6 text-center text-sm text-slate-500">
                     Already have an account?{" "}
-                    <Link
-                        to="/login"
-                        className="font-semibold text-orange-600 hover:text-orange-700"
-                    >
+                    <Link to="/login" className="font-semibold text-orange-600 hover:text-orange-700">
                         Sign in
                     </Link>
                 </p>

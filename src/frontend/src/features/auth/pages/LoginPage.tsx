@@ -1,27 +1,20 @@
+
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
 
-import API_BASE_URL from "../../../services/api";
+import { loginUser } from "../../../services/authService";
 import { useAuth } from "../AuthContext";
-
-interface AuthResponse {
-    userId: string;
-    fullName: string;
-    email: string;
-    token: string;
-}
 
 export default function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-
-    const location = useLocation();
 
     const from = location.state?.from?.pathname || "/";
 
@@ -32,27 +25,9 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Invalid email or password.");
-            }
-
-            const result: AuthResponse = data;
+            const result = await loginUser(email, password);
 
             login(result.token);
-
             navigate(from, { replace: true });
         } catch (err) {
             setError(
