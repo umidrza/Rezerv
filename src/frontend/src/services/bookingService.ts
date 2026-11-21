@@ -1,3 +1,4 @@
+
 import { apiRequest } from "./api";
 
 import type {
@@ -10,9 +11,9 @@ import type {
     CheckRoomAvailabilityResponse,
 } from "../types/room";
 
-export const checkRoomAvailability = async (
+export function checkRoomAvailability(
     request: CheckRoomAvailabilityRequest
-): Promise<CheckRoomAvailabilityResponse> => {
+): Promise<CheckRoomAvailabilityResponse> {
     const params = new URLSearchParams({
         roomId: request.roomId,
         checkIn: request.checkIn,
@@ -20,14 +21,14 @@ export const checkRoomAvailability = async (
     });
 
     return apiRequest<CheckRoomAvailabilityResponse>(
-        `/bookings/check-availability?${params}`
+        `/bookings/check-availability?${params.toString()}`
     );
-};
+}
 
-export const createBooking = async (
+export function createBooking(
     request: CreateBookingRequest,
     token: string
-): Promise<Booking> => {
+): Promise<Booking> {
     return apiRequest<Booking>(
         "/bookings",
         {
@@ -36,69 +37,67 @@ export const createBooking = async (
         },
         token
     );
-};
+}
 
-export const getMyBookings = async (
-    token: string
-): Promise<Booking[]> => {
+export function getMyBookings(token: string): Promise<Booking[]> {
     return apiRequest<Booking[]>(
         "/bookings/my-bookings",
         {},
         token
     );
-};
+}
 
-export const getBookingById = async (
-    bookingId: string
-): Promise<Booking> => {
-    const token = localStorage.getItem("token");
-
+export function getBookingById(
+    bookingId: string,
+    token: string
+): Promise<Booking> {
     return apiRequest<Booking>(
-        `/bookings/${bookingId}`,
+        `/bookings/${encodeURIComponent(bookingId)}`,
         {},
         token
     );
-};
+}
 
-export const getHotelBookings = async (
+export function getHotelBookings(
     hotelId: string,
     token: string
-): Promise<Booking[]> => {
+): Promise<Booking[]> {
     return apiRequest<Booking[]>(
-        `/bookings/hotel/${hotelId}`,
+        `/bookings/hotel/${encodeURIComponent(hotelId)}`,
         {},
         token
     );
-};
+}
 
-export const approveBooking = async (
+export function approveBooking(
     bookingId: string,
     token: string
-): Promise<void> => {
+): Promise<void> {
     return apiRequest<void>(
-        `/bookings/${bookingId}/approve`,
+        `/bookings/${encodeURIComponent(bookingId)}/approve`,
         { method: "PUT" },
         token
     );
-};
+}
 
-export const rejectBooking = async (
+export function rejectBooking(
     bookingId: string,
     token: string
-): Promise<void> => {
+): Promise<void> {
     return apiRequest<void>(
-        `/bookings/${bookingId}/reject`,
+        `/bookings/${encodeURIComponent(bookingId)}/reject`,
         { method: "PUT" },
         token
     );
-};
+}
 
-export const cancelBooking = async (
+export function cancelBooking(
     bookingId: string,
     token: string
-): Promise<void> =>
-    apiRequest<void>(
-        `/bookings/${bookingId}/cancel`,
+): Promise<void> {
+    return apiRequest<void>(
+        `/bookings/${encodeURIComponent(bookingId)}/cancel`,
         { method: "PUT" },
         token
     );
+}

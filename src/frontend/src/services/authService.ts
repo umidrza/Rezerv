@@ -1,3 +1,4 @@
+
 import { apiRequest } from "./api";
 
 export interface AuthResponse {
@@ -7,7 +8,7 @@ export interface AuthResponse {
     token: string;
 }
 
-export async function loginUser(
+export function loginUser(
     email: string,
     password: string
 ): Promise<AuthResponse> {
@@ -17,19 +18,13 @@ export async function loginUser(
     });
 }
 
-
-export async function registerUser(
+export function registerUser(
     fullName: string,
     email: string,
     password: string
 ): Promise<AuthResponse> {
     return apiRequest<AuthResponse>("/auth/register", {
         method: "POST",
-        body: JSON.stringify({
-            fullName,
-            email,
-            password,
-        }),
+        body: JSON.stringify({ fullName, email, password }),
     });
 }
-

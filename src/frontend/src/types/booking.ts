@@ -1,3 +1,4 @@
+
 export interface CreateBookingRequest {
     hotelId: string;
     roomId: string;
@@ -6,27 +7,16 @@ export interface CreateBookingRequest {
     numberOfGuests: number;
 }
 
-export interface Booking {
+export interface Booking extends CreateBookingRequest {
     id: string;
     userId: string;
-    hotelId: string;
     hotelName: string;
-    roomId: string;
     roomNumber: string;
     roomTypeName: string;
-    checkIn: string;
-    checkOut: string;
-    numberOfGuests: number;
     pricePerNight: number;
     totalPrice: number;
     status: string | number;
     createdAt: string;
 }
 
-export interface BookingDraft {
-    hotelId: string;
-    roomId: string;
-    checkIn: string;
-    checkOut: string;
-    numberOfGuests: number;
-}
+export interface BookingDraft extends CreateBookingRequest { }

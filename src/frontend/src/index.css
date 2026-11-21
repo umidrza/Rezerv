@@ -6,22 +6,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
-}
-
-button,
-input {
-  font: inherit;
-}
-
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
@@ -135,13 +119,22 @@ input {
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
+    * {
+        @apply border-border outline-ring/50;
+        box-sizing: border-box;
+    }
+
+    html {
+        @apply font-sans;
+    }
+
+    body {
+        margin: 0;
+        @apply bg-background text-foreground;
+    }
+
+    button,
+    input {
+        font: inherit;
+    }
 }

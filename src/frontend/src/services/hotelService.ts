@@ -1,3 +1,4 @@
+
 import { apiRequest } from "./api";
 
 import type {
@@ -9,7 +10,7 @@ import type {
 
 import type { RoomType } from "../types/roomType";
 
-export async function searchHotels(
+export function searchHotels(
     params: SearchHotelsParams
 ): Promise<PaginatedResult<Hotel>> {
     const queryParams = new URLSearchParams();
@@ -20,32 +21,39 @@ export async function searchHotels(
         }
     });
 
-    return apiRequest<PaginatedResult<Hotel>>(
-        `/hotels/search?${queryParams.toString()}`
+    const query = queryParams.toString();
+    const endpoint = query
+        ? `/hotels/search?${query}`
+        : "/hotels/search";
+
+    return apiRequest<PaginatedResult<Hotel>>(endpoint);
+}
+
+export function getHotelById(id: string): Promise<Hotel> {
+    return apiRequest<Hotel>(
+        `/hotels/${encodeURIComponent(id)}`
     );
 }
 
-export async function getHotelById(id: string): Promise<Hotel> {
-    return apiRequest<Hotel>(`/hotels/${id}`);
-}
-
-export async function getRoomTypesByHotel(
+export function getRoomTypesByHotel(
     hotelId: string
 ): Promise<RoomType[]> {
-    return apiRequest<RoomType[]>(`/roomtypes/hotel/${hotelId}`);
+    return apiRequest<RoomType[]>(
+        `/roomtypes/hotel/${encodeURIComponent(hotelId)}`
+    );
 }
 
-export async function getMyHotels(token: string): Promise<Hotel[]> {
+export function getMyHotels(token: string): Promise<Hotel[]> {
     return apiRequest<Hotel[]>("/hotels/my-hotels", {}, token);
 }
 
-export async function updateHotel(
+export function updateHotel(
     id: string,
     data: UpdateHotelRequest,
     token: string
 ): Promise<Hotel> {
     return apiRequest<Hotel>(
-        `/hotels/${id}`,
+        `/hotels/${encodeURIComponent(id)}`,
         {
             method: "PUT",
             body: JSON.stringify(data),
@@ -54,23 +62,23 @@ export async function updateHotel(
     );
 }
 
-export async function activateHotel(
+export function activateHotel(
     id: string,
     token: string
 ): Promise<void> {
     return apiRequest<void>(
-        `/hotels/${id}/activate`,
+        `/hotels/${encodeURIComponent(id)}/activate`,
         { method: "PUT" },
         token
     );
 }
 
-export async function deactivateHotel(
+export function deactivateHotel(
     id: string,
     token: string
 ): Promise<void> {
     return apiRequest<void>(
-        `/hotels/${id}/deactivate`,
+        `/hotels/${encodeURIComponent(id)}/deactivate`,
         { method: "PUT" },
         token
     );

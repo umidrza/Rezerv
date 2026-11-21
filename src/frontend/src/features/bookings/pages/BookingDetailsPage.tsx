@@ -1,8 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
 
-import type { Booking } from "../../../types/booking";
-import { getBookingById } from "../../../services/bookingService";
+import { Link, useParams } from "react-router";
 
 import BookingPageHeader from "../components/BookingPageHeader";
 import BookingSection from "../components/BookingSection";
@@ -15,40 +12,14 @@ import LoadingState from "../../../components/LoadingState";
 import ErrorMessage from "../../../components/ErrorMessage";
 import BookingStatusBadge from "../components/BookingStatusBadge";
 
+import { useAuth } from "../../auth/AuthContext";
+import { useBookingDetails } from "../hooks/useBookingDetails";
+
 export default function BookingDetailsPage() {
     const { id } = useParams<{ id: string }>();
+    const { token } = useAuth();
 
-    const [booking, setBooking] = useState<Booking | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-
-    useEffect(() => {
-        async function loadBooking() {
-            if (!id) {
-                setError("Booking ID is missing.");
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-                setError("");
-
-                const result = await getBookingById(id);
-                setBooking(result);
-            } catch (err) {
-                setError(
-                    err instanceof Error
-                        ? err.message
-                        : "Failed to load booking."
-                );
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        loadBooking();
-    }, [id]);
+    const { booking, loading, error } = useBookingDetails(id, token);
 
     if (loading) {
         return <LoadingState message="Loading booking details..." />;
