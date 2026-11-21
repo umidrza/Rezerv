@@ -28,9 +28,9 @@ export default function BookingCard({
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <p className="text-sm text-slate-500">Booking ID</p>
+                    <p className="text-sm text-slate-500">Hotel</p>
                     <p className="font-medium text-slate-800">
-                        {booking.id}
+                        {booking.hotelName}
                     </p>
                 </div>
 
