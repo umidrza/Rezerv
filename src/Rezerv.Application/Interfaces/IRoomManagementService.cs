@@ -10,4 +10,14 @@ public interface IRoomManagementService
         bool isAdmin);
     Task<RoomDto?> GetRoomAsync(Guid id);
     Task<List<RoomDto>> GetRoomsByRoomTypeAsync(Guid roomTypeId);
+    Task<RoomDto> UpdateRoomAsync(
+        Guid id,
+        UpdateRoomDto dto,
+        Guid userId,
+        bool isAdmin);
+
+    Task<RoomDto> ToggleRoomStatusAsync(
+        Guid id,
+        Guid userId,
+        bool isAdmin);
 }

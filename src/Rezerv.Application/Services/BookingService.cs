@@ -99,6 +99,11 @@ public class BookingService : IBookingService
         if (checkOut <= checkIn)
             throw new ArgumentException("Check-out must be after check-in.");
 
+        var room = await _roomRepository.GetByIdAsync(roomId);
+
+        if (room == null || !room.IsActive)
+            return false;
+
         checkIn = DateTime.SpecifyKind(checkIn, DateTimeKind.Utc);
         checkOut = DateTime.SpecifyKind(checkOut, DateTimeKind.Utc);
 

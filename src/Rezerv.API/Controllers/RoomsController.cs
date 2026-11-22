@@ -63,4 +63,58 @@ public class RoomsController : ControllerBase
 
         return Ok(rooms);
     }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin,HotelManager")]
+    public async Task<IActionResult> UpdateRoom(
+    Guid id,
+    UpdateRoomDto dto)
+    {
+        var userId = Guid.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var isAdmin = User.IsInRole("Admin");
+
+        try
+        {
+            var room = await _roomService.UpdateRoomAsync(
+                id, dto, userId, isAdmin);
+
+            return Ok(room);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    [Authorize(Roles = "Admin,HotelManager")]
+    public async Task<IActionResult> ToggleRoomStatus(Guid id)
+    {
+        var userId = Guid.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var isAdmin = User.IsInRole("Admin");
+
+        try
+        {
+            var room = await _roomService.ToggleRoomStatusAsync(
+                id, userId, isAdmin);
+
+            return Ok(room);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
 }

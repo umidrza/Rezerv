@@ -14,6 +14,7 @@ import ProtectedRoute from "./features/auth/ProtectedRoute";
 import MyBookingsPage from "./features/bookings/pages/MyBookingsPage";
 import BookingDetailsPage from "./features/bookings/pages/BookingDetailsPage";
 import HotelBookingsPage from "./features/bookings/pages/HotelBookingsPage";
+import RoomManagementPage from "./features/hotels/pages/RoomManagementPage";
 
 import NotFoundPage from "./pages/NotFoundPage";
 
@@ -57,6 +58,9 @@ export default function App() {
               path="/hotels/:hotelId/bookings"
               element={<HotelBookingsPage />}
             />
+            <Route
+              path="/room-types/:roomTypeId/rooms"
+              element={<RoomManagementPage />} />
           </Route>
 
           {/* Not found */}

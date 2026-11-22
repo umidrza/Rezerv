@@ -74,6 +74,68 @@ public class RoomManagementService : IRoomManagementService
         return rooms.Select(MapToDto).ToList();
     }
 
+    public async Task<RoomDto> UpdateRoomAsync(
+    Guid id,
+    UpdateRoomDto dto,
+    Guid userId,
+    bool isAdmin)
+    {
+        var room = await _roomRepository.GetByIdAsync(id);
+
+        if (room == null)
+            throw new ArgumentException("Room not found.");
+
+        if (string.IsNullOrWhiteSpace(dto.RoomNumber))
+            throw new ArgumentException("Room number is required.");
+
+        if (dto.Floor < 0)
+            throw new ArgumentException("Floor cannot be negative.");
+
+        if (!isAdmin)
+        {
+            var isAssigned = await _hotelManagerRepository
+                .IsManagerAssignedAsync(userId, room.RoomType.HotelId);
+
+            if (!isAssigned)
+                throw new UnauthorizedAccessException(
+                    "You are not assigned to this hotel.");
+        }
+
+        room.RoomNumber = dto.RoomNumber;
+        room.Floor = dto.Floor;
+
+        await _roomRepository.UpdateAsync(room);
+
+        return MapToDto(room);
+    }
+
+    public async Task<RoomDto> ToggleRoomStatusAsync(
+        Guid id,
+        Guid userId,
+        bool isAdmin)
+    {
+        var room = await _roomRepository.GetByIdAsync(id);
+
+        if (room == null)
+            throw new ArgumentException("Room not found.");
+
+        if (!isAdmin)
+        {
+            var isAssigned = await _hotelManagerRepository
+                .IsManagerAssignedAsync(userId, room.RoomType.HotelId);
+
+            if (!isAssigned)
+                throw new UnauthorizedAccessException(
+                    "You are not assigned to this hotel.");
+        }
+
+        room.IsActive = !room.IsActive;
+
+        await _roomRepository.UpdateAsync(room);
+
+        return MapToDto(room);
+    }
+
     private static RoomDto MapToDto(Room room)
     {
         return new RoomDto

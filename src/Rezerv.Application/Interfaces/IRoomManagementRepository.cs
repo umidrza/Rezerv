@@ -7,4 +7,5 @@ public interface IRoomManagementRepository
     Task<Room?> GetByIdAsync(Guid id);
     Task<List<Room>> GetByRoomTypeIdAsync(Guid roomTypeId);
     Task AddAsync(Room room);
+    Task UpdateAsync(Room room);
 }

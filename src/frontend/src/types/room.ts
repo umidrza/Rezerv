@@ -6,6 +6,17 @@ export interface Room {
     isActive: boolean;
 }
 
+export interface CreateRoomRequest {
+    roomTypeId: string;
+    roomNumber: string;
+    floor: number;
+}
+
+export interface UpdateRoomRequest {
+    roomNumber: string;
+    floor: number;
+}
+
 export interface CheckRoomAvailabilityRequest {
     roomId: string;
     checkIn: string;
