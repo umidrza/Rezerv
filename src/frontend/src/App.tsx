@@ -25,6 +25,7 @@ export default function App() {
         <Route element={<MainLayout />}>
           {/* Public routes */}
           <Route path="/" element={<HotelsPage />} />
+          <Route path="/hotels" element={<HotelsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/hotels/:id" element={<HotelDetailsPage />} />

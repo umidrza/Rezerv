@@ -38,4 +38,10 @@ public class HotelImageRepository : IHotelImageRepository
         _context.HotelImages.UpdateRange(hotelImages);
         await _context.SaveChangesAsync();
     }
+
+    public async Task DeleteAsync(HotelImage hotelImage)
+    {
+        _context.HotelImages.Remove(hotelImage);
+        await _context.SaveChangesAsync();
+    }
 }

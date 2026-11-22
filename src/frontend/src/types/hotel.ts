@@ -7,6 +7,7 @@ export interface Hotel {
   city: string;
   country: string;
   starRating: number;
+  primaryImageId: string | null;
   primaryImageUrl: string | null;
   isActive: boolean;
 }
@@ -37,4 +38,15 @@ export interface UpdateHotelRequest {
   country: string;
   starRating: number;
   primaryImageUrl?: string;
+}
+
+export interface HotelImage {
+  id: string;
+  hotelId: string;
+  imageUrl: string;
+}
+
+export interface CreateHotelImageRequest {
+  hotelId: string;
+  file: File;
 }

@@ -12,6 +12,7 @@ import BookingPanel from "../components/BookingPanel";
 import BookingConfirmationModal from "../components/BookingConfirmationModal";
 import LoadingState from "@/components/LoadingState";
 import ErrorMessage from "@/components/ErrorMessage";
+import HotelImageGallery from "../components/HotelImageGallery";
 
 export default function HotelDetailsPage() {
     const { id } = useParams<{ id: string }>();
@@ -78,7 +79,15 @@ export default function HotelDetailsPage() {
                     ← Back to hotels
                 </Link>
 
-                <HotelHeader hotel={hotel} />
+                <HotelImageGallery
+                    hotelId={hotel.id}
+                    primaryImageId={hotel.primaryImageId ?? null}
+                    primaryImageUrl={hotel.primaryImageUrl ?? null}
+                />
+
+                <div className="mt-6">
+                    <HotelHeader hotel={hotel} />
+                </div>
 
                 <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
                     <HotelRoomList

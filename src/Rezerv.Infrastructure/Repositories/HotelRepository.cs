@@ -20,6 +20,7 @@ public class HotelRepository : IHotelRepository
     {
         return await _context.Hotels
             .Include(h => h.PrimaryImage)
+            .Include(h => h.Images)
             .Include(h => h.HotelManagers)
             .FirstOrDefaultAsync(h => h.Id == id);
     }

@@ -10,10 +10,16 @@ public interface IHotelImageService
         bool isAdmin);
 
     Task<List<HotelImageDto>> GetHotelImagesAsync(Guid hotelId);
-    
+
     Task SetPrimaryImageAsync(
         Guid hotelId,
         Guid imageId,
         Guid userId,
         bool isAdmin);
+
+    Task DeleteImageAsync(
+       Guid hotelId,
+       Guid imageId,
+       Guid userId,
+       bool isAdmin);
 }

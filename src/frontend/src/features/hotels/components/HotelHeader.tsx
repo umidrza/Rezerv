@@ -8,13 +8,6 @@ interface HotelHeaderProps {
 export default function HotelHeader({ hotel }: HotelHeaderProps) {
     return (
         <section className="overflow-hidden rounded-xl bg-white shadow-sm">
-            {hotel.primaryImageUrl && (
-                <img
-                    src={hotel.primaryImageUrl}
-                    alt={hotel.name}
-                    className="h-72 w-full object-cover"
-                />
-            )}
 
             <div className="p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">

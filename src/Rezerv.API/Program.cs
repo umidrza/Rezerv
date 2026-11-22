@@ -88,11 +88,14 @@ builder.Services.AddScoped<IHotelManagerService, HotelManagerService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<IHotelImageRepository, HotelImageRepository>();
 builder.Services.AddScoped<IHotelImageService, HotelImageService>();
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
 var app = builder.Build();
 
 app.UseHttpsRedirection();
 app.UseCors("Frontend");
+
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

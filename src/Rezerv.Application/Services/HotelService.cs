@@ -100,6 +100,7 @@ public class HotelService : IHotelService
             City = hotel.City,
             Country = hotel.Country,
             StarRating = hotel.StarRating,
+            PrimaryImageId = hotel.PrimaryImageId,
             PrimaryImageUrl = hotel.PrimaryImage?.ImageUrl,
             IsActive = hotel.IsActive
         };

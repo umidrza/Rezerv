@@ -1,4 +1,3 @@
-
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +7,7 @@ using Rezerv.Application.Interfaces;
 namespace Rezerv.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/hotel-images")]
 public class HotelImagesController : ControllerBase
 {
     private readonly IHotelImageService _hotelImageService;
@@ -20,25 +19,25 @@ public class HotelImagesController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin,HotelManager")]
-    public async Task<IActionResult> AddImage(CreateHotelImageDto dto)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> AddImage(
+        [FromForm] CreateHotelImageDto dto)
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(userIdClaim, out var userId))
-            return Unauthorized();
-
-        var isAdmin = User.IsInRole("Admin");
-
         try
         {
-            var image = await _hotelImageService.AddImageAsync(
+            var userId = Guid.Parse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var isAdmin = User.IsInRole("Admin");
+
+            var result = await _hotelImageService.AddImageAsync(
                 dto, userId, isAdmin);
 
-            return Ok(image);
+            return Ok(result);
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new { message = ex.Message });
         }
         catch (UnauthorizedAccessException)
         {
@@ -50,36 +49,58 @@ public class HotelImagesController : ControllerBase
     public async Task<IActionResult> GetHotelImages(Guid hotelId)
     {
         var images = await _hotelImageService.GetHotelImagesAsync(hotelId);
-
         return Ok(images);
     }
 
-    [HttpPut("hotel/{hotelId:guid}/primary-image/{imageId:guid}")]
+    [HttpPut("{hotelId:guid}/{imageId:guid}/primary")]
     [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> SetPrimaryImage(
         Guid hotelId,
         Guid imageId)
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(userIdClaim, out var userId))
-            return Unauthorized();
-
-        var isAdmin = User.IsInRole("Admin");
-
         try
         {
+            var userId = Guid.Parse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var isAdmin = User.IsInRole("Admin");
+
             await _hotelImageService.SetPrimaryImageAsync(
-                hotelId,
-                imageId,
-                userId,
-                isAdmin);
+                hotelId, imageId, userId, isAdmin);
 
             return NoContent();
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpDelete("{hotelId:guid}/{imageId:guid}")]
+    [Authorize(Roles = "Admin,HotelManager")]
+    public async Task<IActionResult> DeleteImage(
+        Guid hotelId,
+        Guid imageId)
+    {
+        try
+        {
+            var userId = Guid.Parse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var isAdmin = User.IsInRole("Admin");
+
+            await _hotelImageService.DeleteImageAsync(
+                hotelId, imageId, userId, isAdmin);
+
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
         catch (UnauthorizedAccessException)
         {

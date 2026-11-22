@@ -15,17 +15,19 @@ export default function MyHotelCard({
 }: MyHotelCardProps) {
     return (
         <article className="overflow-hidden rounded-xl bg-white shadow-sm">
-            {hotel.primaryImageUrl ? (
-                <img
-                    src={hotel.primaryImageUrl}
-                    alt={hotel.name}
-                    className="h-48 w-full object-cover"
-                />
-            ) : (
-                <div className="flex h-48 items-center justify-center bg-slate-200 text-slate-500">
-                    No image available
-                </div>
-            )}
+            <Link to={`/hotels/${hotel.id}`} className="block">
+                {hotel.primaryImageUrl ? (
+                    <img
+                        src={hotel.primaryImageUrl}
+                        alt={hotel.name}
+                        className="h-48 w-full object-cover transition-transform duration-300 hover:scale-105"
+                    />
+                ) : (
+                    <div className="flex h-48 items-center justify-center bg-slate-200 text-slate-500">
+                        No image available
+                    </div>
+                )}
+            </Link>
 
             <div className="p-5">
                 <div className="flex items-center justify-between gap-3">
@@ -34,11 +36,10 @@ export default function MyHotelCard({
                     </h2>
 
                     <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            hotel.isActive
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                        }`}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${hotel.isActive
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                            }`}
                     >
                         {hotel.isActive ? "Active" : "Inactive"}
                     </span>
@@ -47,6 +48,13 @@ export default function MyHotelCard({
                 <p className="mt-2 text-sm text-slate-500">
                     {hotel.city}, {hotel.country}
                 </p>
+
+                <Link
+                    to={`/hotels/${hotel.id}`}
+                    className="mt-3 block text-sm font-semibold text-orange-600 hover:text-orange-700"
+                >
+                    View Hotel →
+                </Link>
 
                 <p className="mt-2 text-sm text-slate-600">
                     {"★".repeat(hotel.starRating)}
@@ -63,11 +71,10 @@ export default function MyHotelCard({
                 <button
                     type="button"
                     onClick={() => onToggleStatus(hotel)}
-                    className={`mt-3 w-full rounded-lg px-4 py-3 font-semibold text-white ${
-                        hotel.isActive
-                            ? "bg-red-500 hover:bg-red-600"
-                            : "bg-green-600 hover:bg-green-700"
-                    }`}
+                    className={`mt-3 w-full rounded-lg px-4 py-3 font-semibold text-white ${hotel.isActive
+                        ? "bg-red-500 hover:bg-red-600"
+                        : "bg-green-600 hover:bg-green-700"
+                        }`}
                 >
                     {hotel.isActive ? "Deactivate Hotel" : "Activate Hotel"}
                 </button>
