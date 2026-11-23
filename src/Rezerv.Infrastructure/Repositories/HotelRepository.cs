@@ -105,4 +105,30 @@ public class HotelRepository : IHotelRepository
             .OrderBy(h => h.Name)
             .ToListAsync();
     }
+
+    public async Task<int> CountAsync()
+    {
+        return await _context.Hotels.CountAsync();
+    }
+
+    public async Task<int> CountActiveAsync()
+    {
+        return await _context.Hotels
+            .CountAsync(h => h.IsActive);
+    }
+
+    public async Task<int> CountByManagerIdAsync(Guid managerId)
+    {
+        return await _context.Hotels
+            .CountAsync(h => h.HotelManagers.Any(
+                hm => hm.UserId == managerId));
+    }
+
+    public async Task<int> CountActiveByManagerIdAsync(Guid managerId)
+    {
+        return await _context.Hotels
+            .CountAsync(h =>
+                h.IsActive &&
+                h.HotelManagers.Any(hm => hm.UserId == managerId));
+    }
 }

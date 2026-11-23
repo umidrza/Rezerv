@@ -242,7 +242,7 @@ public class BookingService : IBookingService
         return MapToDto(booking);
     }
 
-    private static BookingDto MapToDto(Booking booking)
+    internal static BookingDto MapToDto(Booking booking)
     {
         return new BookingDto
         {

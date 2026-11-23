@@ -99,4 +99,90 @@ public class BookingRepository : IBookingRepository
 
         return true;
     }
+
+    public async Task<int> CountAsync(BookingStatus? status = null)
+    {
+        return await BuildQuery(status).CountAsync();
+    }
+
+    public async Task<int> CountByUserIdAsync(
+        Guid userId,
+        BookingStatus? status = null)
+    {
+        return await BuildUserQuery(userId, status).CountAsync();
+    }
+
+    public async Task<int> CountByManagerIdAsync(
+        Guid managerId,
+        BookingStatus? status = null)
+    {
+        return await BuildManagerQuery(managerId, status).CountAsync();
+    }
+
+    public async Task<List<Booking>> GetRecentAsync(int count)
+    {
+        return await IncludeBookingDetails(BuildQuery())
+            .OrderByDescending(b => b.CreatedAt)
+            .Take(count)
+            .ToListAsync();
+    }
+
+    public async Task<List<Booking>> GetRecentByUserIdAsync(
+        Guid userId,
+        int count)
+    {
+        return await IncludeBookingDetails(BuildUserQuery(userId))
+            .OrderByDescending(b => b.CreatedAt)
+            .Take(count)
+            .ToListAsync();
+    }
+
+    public async Task<List<Booking>> GetRecentByManagerIdAsync(
+        Guid managerId,
+        int count)
+    {
+        return await IncludeBookingDetails(BuildManagerQuery(managerId))
+            .OrderByDescending(b => b.CreatedAt)
+            .Take(count)
+            .ToListAsync();
+    }
+
+    private IQueryable<Booking> BuildQuery(BookingStatus? status = null)
+    {
+        var query = _context.Bookings.AsQueryable();
+
+        if (status.HasValue)
+            query = query.Where(b => b.Status == status.Value);
+
+        return query;
+    }
+
+    private IQueryable<Booking> BuildManagerQuery(
+        Guid managerId,
+        BookingStatus? status = null)
+    {
+        var query = BuildQuery(status)
+            .Where(b => b.Hotel.HotelManagers
+                .Any(hm => hm.UserId == managerId));
+
+        return query;
+    }
+
+    private IQueryable<Booking> BuildUserQuery(
+        Guid userId,
+        BookingStatus? status = null)
+    {
+        return BuildQuery(status)
+            .Where(b => b.UserId == userId);
+    }
+
+    private static IQueryable<Booking> IncludeBookingDetails(
+        IQueryable<Booking> query)
+    {
+        return query
+            .Include(b => b.Hotel)
+            .Include(b => b.Room)
+                .ThenInclude(r => r.RoomType);
+    }
+
 }

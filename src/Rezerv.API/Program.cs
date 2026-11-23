@@ -89,6 +89,8 @@ builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 builder.Services.AddScoped<IHotelImageRepository, HotelImageRepository>();
 builder.Services.AddScoped<IHotelImageService, HotelImageService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 var app = builder.Build();
 

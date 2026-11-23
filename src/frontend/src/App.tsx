@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Route, Routes } from "react-router";
 
 import MainLayout from "./layouts/MainLayout";
@@ -17,6 +16,7 @@ import HotelBookingsPage from "./features/bookings/pages/HotelBookingsPage";
 import RoomManagementPage from "./features/hotels/pages/RoomManagementPage";
 
 import NotFoundPage from "./pages/NotFoundPage";
+import DashboardPage from "./pages/DashboardPage";
 
 export default function App() {
   return (
@@ -32,26 +32,19 @@ export default function App() {
 
           {/* Authenticated users */}
           <Route element={<ProtectedRoute />}>
-            <Route
-              path="/bookings/:id"
-              element={<BookingDetailsPage />}
-            />
+            <Route path="/bookings/:id" element={<BookingDetailsPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
           </Route>
 
           {/* Customer only */}
           <Route element={<ProtectedRoute allowedRoles={["Customer"]} />}>
-            <Route
-              path="/my-bookings"
-              element={<MyBookingsPage />}
-            />
+            <Route path="/my-bookings" element={<MyBookingsPage />} />
           </Route>
 
           {/* Admin and HotelManager */}
           <Route
             element={
-              <ProtectedRoute
-                allowedRoles={["Admin", "HotelManager"]}
-              />
+              <ProtectedRoute allowedRoles={["Admin", "HotelManager"]} />
             }
           >
             <Route path="/my-hotels" element={<MyHotelsPage />} />
@@ -61,7 +54,8 @@ export default function App() {
             />
             <Route
               path="/room-types/:roomTypeId/rooms"
-              element={<RoomManagementPage />} />
+              element={<RoomManagementPage />}
+            />
           </Route>
 
           {/* Not found */}

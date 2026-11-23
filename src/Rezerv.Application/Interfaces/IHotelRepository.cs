@@ -12,4 +12,8 @@ public interface IHotelRepository
     Task<List<Hotel>> SearchAsync(SearchHotelsDto dto);
     Task<int> CountSearchResultsAsync(SearchHotelsDto dto);
     Task<List<Hotel>> GetByManagerIdAsync(Guid userId);
+    Task<int> CountAsync();
+    Task<int> CountActiveAsync();
+    Task<int> CountByManagerIdAsync(Guid managerId);
+    Task<int> CountActiveByManagerIdAsync(Guid managerId);
 }
