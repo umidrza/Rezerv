@@ -15,8 +15,14 @@ export default function Navbar() {
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-        <Link to="/" className="text-2xl font-bold text-orange-500">
-          Rezerv
+        <Link to="/" className="flex items-center gap-2">
+          <img
+            src="/images/icon.png"
+            alt="Rezerv"
+            className="h-9 w-9 object-contain"
+          />
+
+          <span className="text-2xl font-bold text-orange-500">Rezerv</span>
         </Link>
 
         <nav className="flex items-center gap-6">
