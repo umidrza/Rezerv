@@ -15,7 +15,11 @@ export interface Hotel {
 
 export interface SearchHotelsParams {
   city?: string;
+  country?: string;
   starRating?: number;
+  minimumAverageRating?: number;
+  sortBy?: string;
+  sortDescending?: boolean;
   checkIn?: string;
   checkOut?: string;
   numberOfGuests?: number;

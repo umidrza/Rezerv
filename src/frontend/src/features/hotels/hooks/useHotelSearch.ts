@@ -6,10 +6,13 @@ import type { Hotel } from "../../../types/hotel";
 
 export function useHotelSearch() {
     const [city, setCity] = useState("");
+    const [country, setCountry] = useState("");
     const [checkIn, setCheckIn] = useState("");
     const [checkOut, setCheckOut] = useState("");
     const [guests, setGuests] = useState("");
     const [starRating, setStarRating] = useState("");
+    const [minimumAverageRating, setMinimumAverageRating] = useState("");
+    const [sortBy, setSortBy] = useState("Name");
 
     const [hotels, setHotels] = useState<Hotel[]>([]);
     const [page, setPage] = useState(1);
@@ -25,10 +28,16 @@ export function useHotelSearch() {
         try {
             const result = await searchHotels({
                 city: city || undefined,
+                country: country || undefined,
                 checkIn: checkIn || undefined,
                 checkOut: checkOut || undefined,
                 numberOfGuests: guests ? Number(guests) : undefined,
                 starRating: starRating ? Number(starRating) : undefined,
+                minimumAverageRating: minimumAverageRating
+                    ? Number(minimumAverageRating)
+                    : undefined,
+                sortBy,
+                sortDescending: true,
                 page: pageNumber,
             });
 
@@ -49,6 +58,8 @@ export function useHotelSearch() {
     return {
         city,
         setCity,
+        country,
+        setCountry,
         checkIn,
         setCheckIn,
         checkOut,
@@ -57,6 +68,10 @@ export function useHotelSearch() {
         setGuests,
         starRating,
         setStarRating,
+        minimumAverageRating,
+        setMinimumAverageRating,
+        sortBy,
+        setSortBy,
         hotels,
         page,
         totalPages,
