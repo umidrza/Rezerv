@@ -10,13 +10,16 @@ public class HotelService : IHotelService
 {
     private readonly IHotelRepository _hotelRepository;
     private readonly IHotelImageRepository _hotelImageRepository;
+    private readonly IHotelReviewRepository _reviewRepository;
 
     public HotelService(
-    IHotelRepository hotelRepository,
-    IHotelImageRepository hotelImageRepository)
+        IHotelRepository hotelRepository,
+        IHotelImageRepository hotelImageRepository,
+        IHotelReviewRepository reviewRepository)
     {
         _hotelRepository = hotelRepository;
         _hotelImageRepository = hotelImageRepository;
+        _reviewRepository = reviewRepository;
     }
 
     public async Task<HotelDto> CreateHotelAsync(CreateHotelDto dto)
@@ -72,38 +75,28 @@ public class HotelService : IHotelService
             await _hotelRepository.UpdateAsync(hotel);
         }
 
-        return MapToDto(hotel);
+        return await MapToDto(hotel);
     }
 
     public async Task<HotelDto?> GetHotelAsync(Guid id)
     {
         var hotel = await _hotelRepository.GetByIdAsync(id);
 
-        return hotel == null ? null : MapToDto(hotel);
+        return hotel == null ? null : await MapToDto(hotel);
     }
 
     public async Task<List<HotelDto>> GetAllHotelsAsync()
     {
         var hotels = await _hotelRepository.GetAllAsync();
 
-        return hotels.Select(MapToDto).ToList();
-    }
+        var result = new List<HotelDto>();
 
-    private static HotelDto MapToDto(Hotel hotel)
-    {
-        return new HotelDto
+        foreach (var hotel in hotels)
         {
-            Id = hotel.Id,
-            Name = hotel.Name,
-            Description = hotel.Description,
-            Address = hotel.Address,
-            City = hotel.City,
-            Country = hotel.Country,
-            StarRating = hotel.StarRating,
-            PrimaryImageId = hotel.PrimaryImageId,
-            PrimaryImageUrl = hotel.PrimaryImage?.ImageUrl,
-            IsActive = hotel.IsActive
-        };
+            result.Add(await MapToDto(hotel));
+        }
+
+        return result;
     }
 
     public async Task<PaginatedResultDto<HotelDto>> SearchHotelsAsync(SearchHotelsDto dto)
@@ -167,7 +160,9 @@ public class HotelService : IHotelService
             City = hotel.City,
             Country = hotel.Country,
             StarRating = hotel.StarRating,
-            PrimaryImageUrl = hotel.PrimaryImage?.ImageUrl
+            PrimaryImageUrl = hotel.PrimaryImage?.ImageUrl,
+            AverageRating = 0,
+            ReviewCount = 0
         }).ToList();
 
         return new PaginatedResultDto<HotelDto>
@@ -186,7 +181,14 @@ public class HotelService : IHotelService
             ? await _hotelRepository.GetAllAsync()
             : await _hotelRepository.GetByManagerIdAsync(userId);
 
-        return hotels.Select(MapToDto).ToList();
+        var result = new List<HotelDto>();
+
+        foreach (var hotel in hotels)
+        {
+            result.Add(await MapToDto(hotel));
+        }
+
+        return result;
     }
 
     public async Task<HotelDto> UpdateHotelAsync(
@@ -256,7 +258,7 @@ public class HotelService : IHotelService
 
         await _hotelRepository.UpdateAsync(hotel);
 
-        return MapToDto(hotel);
+        return await MapToDto(hotel);
     }
 
 
@@ -278,6 +280,25 @@ public class HotelService : IHotelService
         hotel.IsActive = isActive;
 
         await _hotelRepository.UpdateAsync(hotel);
+    }
+
+    private async Task<HotelDto> MapToDto(Hotel hotel)
+    {
+        return new HotelDto
+        {
+            Id = hotel.Id,
+            Name = hotel.Name,
+            Description = hotel.Description,
+            Address = hotel.Address,
+            City = hotel.City,
+            Country = hotel.Country,
+            StarRating = hotel.StarRating,
+            PrimaryImageId = hotel.PrimaryImageId,
+            PrimaryImageUrl = hotel.PrimaryImage?.ImageUrl,
+            IsActive = hotel.IsActive,
+            AverageRating = await _reviewRepository.GetAverageRatingAsync(hotel.Id),
+            ReviewCount = await _reviewRepository.GetReviewCountAsync(hotel.Id)
+        };
     }
 
 }

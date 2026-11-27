@@ -1,4 +1,3 @@
-
 export interface Hotel {
   id: string;
   name: string;
@@ -10,6 +9,8 @@ export interface Hotel {
   primaryImageId: string | null;
   primaryImageUrl: string | null;
   isActive: boolean;
+  averageRating: number;
+  reviewCount: number;
 }
 
 export interface SearchHotelsParams {

@@ -283,6 +283,37 @@ namespace Rezerv.Infrastructure.Data.Migrations
                     b.ToTable("HotelManagers");
                 });
 
+            modelBuilder.Entity("Rezerv.Domain.Entities.HotelReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("HotelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HotelId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("HotelReviews");
+                });
+
             modelBuilder.Entity("Rezerv.Domain.Entities.Room", b =>
                 {
                     b.Property<Guid>("Id")
@@ -511,6 +542,17 @@ namespace Rezerv.Infrastructure.Data.Migrations
                     b.Navigation("Hotel");
                 });
 
+            modelBuilder.Entity("Rezerv.Domain.Entities.HotelReview", b =>
+                {
+                    b.HasOne("Rezerv.Domain.Entities.Hotel", "Hotel")
+                        .WithMany("Reviews")
+                        .HasForeignKey("HotelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Hotel");
+                });
+
             modelBuilder.Entity("Rezerv.Domain.Entities.Room", b =>
                 {
                     b.HasOne("Rezerv.Domain.Entities.RoomType", "RoomType")
@@ -538,6 +580,8 @@ namespace Rezerv.Infrastructure.Data.Migrations
                     b.Navigation("HotelManagers");
 
                     b.Navigation("Images");
+
+                    b.Navigation("Reviews");
 
                     b.Navigation("RoomTypes");
                 });

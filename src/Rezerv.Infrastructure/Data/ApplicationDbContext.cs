@@ -19,6 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Booking> Bookings { get; set; }
     public DbSet<HotelManager> HotelManagers { get; set; }
     public DbSet<HotelImage> HotelImages { get; set; }
+    public DbSet<HotelReview> HotelReviews { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -89,5 +90,25 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .WithMany()
             .HasForeignKey(h => h.PrimaryImageId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<HotelReview>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+
+            entity.Property(r => r.Rating)
+                .IsRequired();
+
+            entity.Property(r => r.Comment)
+                .HasMaxLength(1000)
+                .IsRequired();
+
+            entity.HasOne(r => r.Hotel)
+                .WithMany(h => h.Reviews)
+                .HasForeignKey(r => r.HotelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(r => new { r.HotelId, r.UserId })
+                .IsUnique();
+        });
     }
 }

@@ -91,6 +91,8 @@ builder.Services.AddScoped<IHotelImageService, HotelImageService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IHotelReviewRepository, HotelReviewRepository>();
+builder.Services.AddScoped<IHotelReviewService, HotelReviewService>();
 
 var app = builder.Build();
 

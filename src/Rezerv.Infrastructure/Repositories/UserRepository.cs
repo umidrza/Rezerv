@@ -18,4 +18,14 @@ public class UserRepository : IUserRepository
     {
         return _userManager.Users.CountAsync();
     }
+
+    public async Task<Dictionary<Guid, string>> GetFullNamesByIdsAsync(
+    IEnumerable<Guid> userIds)
+    {
+        var ids = userIds.Distinct().ToList();
+
+        return await _userManager.Users
+            .Where(user => ids.Contains(user.Id))
+            .ToDictionaryAsync(user => user.Id, user => user.FullName);
+    }
 }

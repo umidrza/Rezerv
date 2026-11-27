@@ -24,5 +24,6 @@ public class Hotel
     public ICollection<RoomType> RoomTypes { get; set; } = new List<RoomType>();
     public ICollection<HotelManager> HotelManagers { get; set; } = new List<HotelManager>();
     public ICollection<HotelImage> Images { get; set; } = new List<HotelImage>();
+    public ICollection<HotelReview> Reviews { get; set; } = new List<HotelReview>();
 
 }

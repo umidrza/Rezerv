@@ -12,4 +12,6 @@ public class HotelDto
     public Guid? PrimaryImageId { get; set; }
     public string? PrimaryImageUrl { get; set; }
     public bool IsActive { get; set; }
+    public double AverageRating { get; set; }
+    public int ReviewCount { get; set; }
 }
