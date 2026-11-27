@@ -46,9 +46,8 @@ public class HotelRepository : IHotelRepository
 
     public async Task<List<Hotel>> SearchAsync(SearchHotelsDto dto)
     {
-        return await BuildSearchQuery(dto)
+        return await ApplySorting(BuildSearchQuery(dto), dto)
             .Include(h => h.PrimaryImage)
-            .OrderBy(h => h.Name)
             .Skip((dto.Page - 1) * dto.PageSize)
             .Take(dto.PageSize)
             .ToListAsync();
@@ -57,8 +56,7 @@ public class HotelRepository : IHotelRepository
     private IQueryable<Hotel> BuildSearchQuery(SearchHotelsDto dto)
     {
         var query = _context.Hotels
-            .Where(h => h.IsActive)
-            .AsQueryable();
+            .Where(h => h.IsActive);
 
         if (!string.IsNullOrWhiteSpace(dto.City))
         {
@@ -66,10 +64,24 @@ public class HotelRepository : IHotelRepository
                 h.City.ToLower() == dto.City.ToLower());
         }
 
+        if (!string.IsNullOrWhiteSpace(dto.Country))
+        {
+            query = query.Where(h =>
+                h.Country.ToLower() == dto.Country.ToLower());
+        }
+
         if (dto.StarRating.HasValue)
         {
             query = query.Where(h =>
                 h.StarRating == dto.StarRating.Value);
+        }
+
+        if (dto.MinimumAverageRating.HasValue)
+        {
+            query = query.Where(h =>
+                _context.HotelReviews
+                    .Where(r => r.HotelId == h.Id)
+                    .Average(r => (double?)r.Rating) >= dto.MinimumAverageRating);
         }
 
         if (dto.CheckIn.HasValue || dto.NumberOfGuests.HasValue)
@@ -90,6 +102,34 @@ public class HotelRepository : IHotelRepository
         }
 
         return query;
+    }
+
+    private IOrderedQueryable<Hotel> ApplySorting(
+        IQueryable<Hotel> query,
+        SearchHotelsDto dto)
+    {
+        return dto.SortBy?.ToLower() switch
+        {
+            "name" => dto.SortDescending
+                ? query.OrderByDescending(h => h.Name)
+                : query.OrderBy(h => h.Name),
+
+            "starrating" => dto.SortDescending
+                ? query.OrderByDescending(h => h.StarRating)
+                : query.OrderBy(h => h.StarRating),
+
+            "averagerating" => dto.SortDescending
+                ? query.OrderByDescending(h =>
+                    _context.HotelReviews
+                        .Where(r => r.HotelId == h.Id)
+                        .Average(r => (double?)r.Rating) ?? 0)
+                : query.OrderBy(h =>
+                    _context.HotelReviews
+                        .Where(r => r.HotelId == h.Id)
+                        .Average(r => (double?)r.Rating) ?? 0),
+
+            _ => query.OrderBy(h => h.Name)
+        };
     }
 
     public async Task<int> CountSearchResultsAsync(SearchHotelsDto dto)

@@ -110,6 +110,19 @@ public class HotelService : IHotelService
             throw new ArgumentException("Star rating must be between 1 and 5.");
         }
 
+        if (dto.MinimumAverageRating.HasValue &&
+            (dto.MinimumAverageRating < 1 || dto.MinimumAverageRating > 5))
+        {
+            throw new ArgumentException("Minimum average rating must be between 1 and 5.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.SortBy) &&
+            !new[] { "Name", "StarRating", "AverageRating" }
+                .Contains(dto.SortBy, StringComparer.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Invalid sort option.");
+        }
+
         if (dto.CheckIn.HasValue != dto.CheckOut.HasValue)
         {
             throw new ArgumentException("Both check-in and check-out dates are required.");
