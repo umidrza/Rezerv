@@ -61,4 +61,23 @@ public class HotelReviewRepository : IHotelReviewRepository
         return await _context.HotelReviews
             .CountAsync(r => r.HotelId == hotelId);
     }
+
+    public async Task<Dictionary<Guid, (double AverageRating, int ReviewCount)>>
+    GetRatingsByHotelIdsAsync(IEnumerable<Guid> hotelIds)
+    {
+        var ids = hotelIds.Distinct().ToList();
+
+        return await _context.HotelReviews
+            .Where(r => ids.Contains(r.HotelId))
+            .GroupBy(r => r.HotelId)
+            .Select(g => new
+            {
+                HotelId = g.Key,
+                AverageRating = g.Average(r => (double)r.Rating),
+                ReviewCount = g.Count()
+            })
+            .ToDictionaryAsync(
+                x => x.HotelId,
+                x => (x.AverageRating, x.ReviewCount));
+    }
 }

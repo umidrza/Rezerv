@@ -10,4 +10,5 @@ public interface IHotelReviewRepository
     Task AddAsync(HotelReview review);
     Task<double> GetAverageRatingAsync(Guid hotelId);
     Task<int> GetReviewCountAsync(Guid hotelId);
+    Task<Dictionary<Guid, (double AverageRating, int ReviewCount)>> GetRatingsByHotelIdsAsync(IEnumerable<Guid> hotelIds);
 }

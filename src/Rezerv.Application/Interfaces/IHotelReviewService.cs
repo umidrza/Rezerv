@@ -10,4 +10,6 @@ public interface IHotelReviewService
         CreateHotelReviewDto dto);
 
     Task<List<HotelReviewDto>> GetHotelReviewsAsync(Guid hotelId);
+
+    Task<bool> CanReviewHotelAsync(Guid hotelId, Guid userId);
 }

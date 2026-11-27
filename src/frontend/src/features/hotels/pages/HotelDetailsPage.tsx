@@ -21,7 +21,7 @@ export default function HotelDetailsPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, isCustomer } = useAuth();
 
   const { hotel, roomTypes, loading, error: hotelError } = useHotelDetails(id);
 
@@ -31,6 +31,8 @@ export default function HotelDetailsPage() {
     error: reviewsError,
     submitting,
     submitReview,
+    canReview,
+    eligibilityLoading,
   } = useHotelReviews(id, token);
 
   const booking = useHotelBooking({
@@ -124,13 +126,8 @@ export default function HotelDetailsPage() {
           error={reviewsError}
         />
 
-        {isAuthenticated && (
-          <HotelReviewForm
-            onSubmit={async (data) => {
-              await submitReview(data);
-            }}
-            submitting={submitting}
-          />
+        {isAuthenticated && isCustomer && !eligibilityLoading && canReview && (
+          <HotelReviewForm onSubmit={submitReview} submitting={submitting} />
         )}
       </main>
 

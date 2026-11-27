@@ -75,28 +75,30 @@ public class HotelService : IHotelService
             await _hotelRepository.UpdateAsync(hotel);
         }
 
-        return await MapToDto(hotel);
+        return MapToDto(hotel);
     }
 
     public async Task<HotelDto?> GetHotelAsync(Guid id)
     {
         var hotel = await _hotelRepository.GetByIdAsync(id);
 
-        return hotel == null ? null : await MapToDto(hotel);
+        if (hotel == null)
+            return null;
+
+        var ratings = await _reviewRepository.GetRatingsByHotelIdsAsync(
+            new[] { hotel.Id });
+
+        return MapToDto(hotel, ratings);
     }
 
     public async Task<List<HotelDto>> GetAllHotelsAsync()
     {
         var hotels = await _hotelRepository.GetAllAsync();
 
-        var result = new List<HotelDto>();
+        var ratings = await _reviewRepository.GetRatingsByHotelIdsAsync(
+            hotels.Select(h => h.Id));
 
-        foreach (var hotel in hotels)
-        {
-            result.Add(await MapToDto(hotel));
-        }
-
-        return result;
+        return hotels.Select(h => MapToDto(h, ratings)).ToList();
     }
 
     public async Task<PaginatedResultDto<HotelDto>> SearchHotelsAsync(SearchHotelsDto dto)
@@ -151,19 +153,12 @@ public class HotelService : IHotelService
         var hotels = await _hotelRepository.SearchAsync(dto);
         var totalCount = await _hotelRepository.CountSearchResultsAsync(dto);
 
-        var items = hotels.Select(hotel => new HotelDto
-        {
-            Id = hotel.Id,
-            Name = hotel.Name,
-            Description = hotel.Description,
-            Address = hotel.Address,
-            City = hotel.City,
-            Country = hotel.Country,
-            StarRating = hotel.StarRating,
-            PrimaryImageUrl = hotel.PrimaryImage?.ImageUrl,
-            AverageRating = 0,
-            ReviewCount = 0
-        }).ToList();
+        var ratings = await _reviewRepository.GetRatingsByHotelIdsAsync(
+            hotels.Select(h => h.Id));
+
+        var items = hotels
+            .Select(hotel => MapToDto(hotel, ratings))
+            .ToList();
 
         return new PaginatedResultDto<HotelDto>
         {
@@ -181,14 +176,10 @@ public class HotelService : IHotelService
             ? await _hotelRepository.GetAllAsync()
             : await _hotelRepository.GetByManagerIdAsync(userId);
 
-        var result = new List<HotelDto>();
+        var ratings = await _reviewRepository.GetRatingsByHotelIdsAsync(
+            hotels.Select(h => h.Id));
 
-        foreach (var hotel in hotels)
-        {
-            result.Add(await MapToDto(hotel));
-        }
-
-        return result;
+        return hotels.Select(h => MapToDto(h, ratings)).ToList();
     }
 
     public async Task<HotelDto> UpdateHotelAsync(
@@ -258,7 +249,7 @@ public class HotelService : IHotelService
 
         await _hotelRepository.UpdateAsync(hotel);
 
-        return await MapToDto(hotel);
+        return MapToDto(hotel);
     }
 
 
@@ -282,8 +273,12 @@ public class HotelService : IHotelService
         await _hotelRepository.UpdateAsync(hotel);
     }
 
-    private async Task<HotelDto> MapToDto(Hotel hotel)
+    private static HotelDto MapToDto(
+        Hotel hotel,
+        Dictionary<Guid, (double AverageRating, int ReviewCount)>? ratings = null)
     {
+        var rating = ratings?.GetValueOrDefault(hotel.Id);
+
         return new HotelDto
         {
             Id = hotel.Id,
@@ -296,8 +291,8 @@ public class HotelService : IHotelService
             PrimaryImageId = hotel.PrimaryImageId,
             PrimaryImageUrl = hotel.PrimaryImage?.ImageUrl,
             IsActive = hotel.IsActive,
-            AverageRating = await _reviewRepository.GetAverageRatingAsync(hotel.Id),
-            ReviewCount = await _reviewRepository.GetReviewCountAsync(hotel.Id)
+            AverageRating = rating?.AverageRating ?? 0,
+            ReviewCount = rating?.ReviewCount ?? 0
         };
     }
 

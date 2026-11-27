@@ -88,6 +88,22 @@ public class HotelReviewService : IHotelReviewService
         return reviews.Select(r => MapToDto(r, names)).ToList();
     }
 
+    public async Task<bool> CanReviewHotelAsync(Guid hotelId, Guid userId)
+    {
+        if (await _hotelRepository.GetByIdAsync(hotelId) is null)
+            return false;
+
+        if (await _reviewRepository.ExistsAsync(hotelId, userId))
+            return false;
+
+        var bookings = await _bookingRepository.GetByUserIdAsync(userId);
+
+        return bookings.Any(b =>
+            b.HotelId == hotelId &&
+            b.Status == BookingStatus.Approved &&
+            b.CheckOut <= DateTime.UtcNow);
+    }
+
     private static HotelReviewDto MapToDto(
         HotelReview review,
         Dictionary<Guid, string> names)

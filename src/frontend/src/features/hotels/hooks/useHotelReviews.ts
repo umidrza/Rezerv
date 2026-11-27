@@ -1,82 +1,105 @@
-
 import { useCallback, useEffect, useState } from "react";
 
 import type {
-    HotelReview,
-    CreateHotelReviewRequest,
+  HotelReview,
+  CreateHotelReviewRequest,
 } from "../../../types/hotelReview";
 
 import {
-    getHotelReviews,
-    createHotelReview,
+  getHotelReviews,
+  createHotelReview,
 } from "../../../services/hotelReviewService";
+import { canReviewHotel } from "../../../services/hotelReviewService";
 
 export function useHotelReviews(
-    hotelId: string | undefined,
-    token: string | null
+  hotelId: string | undefined,
+  token: string | null,
 ) {
-    const [reviews, setReviews] = useState<HotelReview[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<HotelReview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const fetchReviews = useCallback(async () => {
-        if (!hotelId) return;
+  const [canReview, setCanReview] = useState(false);
+  const [eligibilityLoading, setEligibilityLoading] = useState(false);
 
-        try {
-            setLoading(true);
-            setError(null);
+  const fetchReviews = useCallback(async () => {
+    if (!hotelId) return;
 
-            const data = await getHotelReviews(hotelId);
-            setReviews(data);
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Failed to load reviews."
-            );
-        } finally {
-            setLoading(false);
-        }
-    }, [hotelId]);
+    try {
+      setLoading(true);
+      setError(null);
 
-    useEffect(() => {
-        fetchReviews();
-    }, [fetchReviews]);
+      const data = await getHotelReviews(hotelId);
+      setReviews(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load reviews.");
+    } finally {
+      setLoading(false);
+    }
+  }, [hotelId]);
 
-    const submitReview = async (data: CreateHotelReviewRequest) => {
-        if (!hotelId || !token) {
-            throw new Error("You must be logged in to submit a review.");
-        }
+  const checkEligibility = useCallback(async () => {
+    if (!hotelId || !token) {
+      setCanReview(false);
+      return;
+    }
 
-        try {
-            setSubmitting(true);
-            setError(null);
+    try {
+      setEligibilityLoading(true);
 
-            const review = await createHotelReview(hotelId, data, token);
+      const result = await canReviewHotel(hotelId, token);
+      setCanReview(result);
+    } catch {
+      setCanReview(false);
+    } finally {
+      setEligibilityLoading(false);
+    }
+  }, [hotelId, token]);
 
-            setReviews((current) => [review, ...current]);
+  useEffect(() => {
+    checkEligibility();
+  }, [checkEligibility]);
 
-            return review;
-        } catch (err) {
-            const message =
-                err instanceof Error
-                    ? err.message
-                    : "Failed to submit review.";
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
 
-            setError(message);
-            throw err;
-        } finally {
-            setSubmitting(false);
-        }
-    };
+  const submitReview = async (data: CreateHotelReviewRequest) => {
+    if (!hotelId || !token) {
+      throw new Error("You must be logged in to submit a review.");
+    }
 
-    return {
-        reviews,
-        loading,
-        submitting,
-        error,
-        submitReview,
-        refreshReviews: fetchReviews,
-    };
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      const review = await createHotelReview(hotelId, data, token);
+
+      setReviews((current) => [review, ...current]);
+
+      setCanReview(false);
+
+      return review;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to submit review.";
+
+      setError(message);
+      throw err;
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return {
+    reviews,
+    loading,
+    submitting,
+    error,
+    submitReview,
+    refreshReviews: fetchReviews,
+    canReview,
+    eligibilityLoading,
+  };
 }

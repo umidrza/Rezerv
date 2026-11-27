@@ -1,8 +1,8 @@
 import { useState } from "react";
-import type { CreateHotelReviewRequest } from "../../../types/hotelReview";
+import type { CreateHotelReviewRequest, HotelReview } from "../../../types/hotelReview";
 
 interface HotelReviewFormProps {
-  onSubmit: (data: CreateHotelReviewRequest) => Promise<void>;
+  onSubmit: (data: CreateHotelReviewRequest) => Promise<HotelReview>;
   submitting: boolean;
 }
 

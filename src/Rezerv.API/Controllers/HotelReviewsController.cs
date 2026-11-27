@@ -43,4 +43,18 @@ public class HotelReviewsController : ControllerBase
             new { hotelId },
             review);
     }
+
+    [HttpGet("eligibility")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> CanReview(Guid hotelId)
+    {
+        var userId = Guid.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var canReview = await _reviewService.CanReviewHotelAsync(
+            hotelId,
+            userId);
+
+        return Ok(canReview);
+    }
 }
