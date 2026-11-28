@@ -43,43 +43,33 @@ export function getRoomTypesByHotel(
     );
 }
 
-export function getMyHotels(token: string): Promise<Hotel[]> {
-    return apiRequest<Hotel[]>("/hotels/my-hotels", {}, token);
+export function getMyHotels(): Promise<Hotel[]> {
+    return apiRequest<Hotel[]>("/hotels/my-hotels");
 }
 
 export function updateHotel(
     id: string,
-    data: UpdateHotelRequest,
-    token: string
+    data: UpdateHotelRequest
 ): Promise<Hotel> {
     return apiRequest<Hotel>(
         `/hotels/${encodeURIComponent(id)}`,
         {
             method: "PUT",
             body: JSON.stringify(data),
-        },
-        token
+        }
     );
 }
 
-export function activateHotel(
-    id: string,
-    token: string
-): Promise<void> {
+export function activateHotel(id: string): Promise<void> {
     return apiRequest<void>(
         `/hotels/${encodeURIComponent(id)}/activate`,
-        { method: "PUT" },
-        token
+        { method: "PUT" }
     );
 }
 
-export function deactivateHotel(
-    id: string,
-    token: string
-): Promise<void> {
+export function deactivateHotel(id: string): Promise<void> {
     return apiRequest<void>(
         `/hotels/${encodeURIComponent(id)}/deactivate`,
-        { method: "PUT" },
-        token
+        { method: "PUT" }
     );
 }

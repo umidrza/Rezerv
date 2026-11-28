@@ -3,7 +3,6 @@ import { Link } from "react-router";
 
 import HotelCard from "../components/HotelCard";
 import LoadingState from "../../../components/LoadingState";
-import { useAuth } from "../../auth/AuthContext";
 import {
   getMyFavorites,
   removeFavorite,
@@ -11,16 +10,12 @@ import {
 import type { Hotel } from "../../../types/hotel";
 
 export default function MyFavoritesPage() {
-  const { token } = useAuth();
-
   const [favorites, setFavorites] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!token) return;
-
-    getMyFavorites(token)
+    getMyFavorites()
       .then(setFavorites)
       .catch((err) => {
         setError(
@@ -28,13 +23,11 @@ export default function MyFavoritesPage() {
         );
       })
       .finally(() => setLoading(false));
-  }, [token]);
+  }, []);
 
   async function handleRemoveFavorite(hotelId: string) {
-    if (!token) return;
-
     try {
-      await removeFavorite(hotelId, token);
+      await removeFavorite(hotelId);
       setFavorites((previous) =>
         previous.filter((hotel) => hotel.id !== hotelId),
       );

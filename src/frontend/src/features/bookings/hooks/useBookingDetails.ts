@@ -2,20 +2,15 @@ import { useEffect, useState } from "react";
 import { getBookingById } from "../../../services/bookingService";
 import type { Booking } from "../../../types/booking";
 
-export function useBookingDetails(
-    id: string | undefined,
-    token: string | null
-) {
+export function useBookingDetails(id: string | undefined) {
     const [booking, setBooking] = useState<Booking | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
         async function loadBooking() {
-            if (!id || !token) {
-                setError(
-                    !id ? "Booking ID is missing." : "Authentication required."
-                );
+            if (!id) {
+                setError("Booking ID is missing.");
                 setLoading(false);
                 return;
             }
@@ -24,7 +19,7 @@ export function useBookingDetails(
                 setLoading(true);
                 setError("");
 
-                const result = await getBookingById(id, token);
+                const result = await getBookingById(id);
                 setBooking(result);
             } catch (err) {
                 setError(
@@ -38,7 +33,7 @@ export function useBookingDetails(
         }
 
         loadBooking();
-    }, [id, token]);
+    }, [id]);
 
     return { booking, loading, error };
 }

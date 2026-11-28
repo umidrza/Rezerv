@@ -13,10 +13,7 @@ import type {
     UpdateRoomRequest,
 } from "../../../types/room";
 
-export function useRoomManagement(
-    roomTypeId: string,
-    token: string | null
-) {
+export function useRoomManagement(roomTypeId: string) {
     const [rooms, setRooms] = useState<Room[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -46,14 +43,12 @@ export function useRoomManagement(
     }, [loadRooms]);
 
     async function addRoom(data: CreateRoomRequest) {
-        if (!token) return;
-
         try {
             setSaving(true);
             setError("");
             setSuccess("");
 
-            const room = await createRoom(data, token);
+            const room = await createRoom(data);
 
             setRooms((current) => [...current, room]);
             setSuccess("Room created successfully.");
@@ -73,14 +68,12 @@ export function useRoomManagement(
         id: string,
         data: UpdateRoomRequest
     ) {
-        if (!token) return;
-
         try {
             setSaving(true);
             setError("");
             setSuccess("");
 
-            const updatedRoom = await updateRoom(id, data, token);
+            const updatedRoom = await updateRoom(id, data);
 
             setRooms((current) =>
                 current.map((room) =>
@@ -102,14 +95,12 @@ export function useRoomManagement(
     }
 
     async function changeRoomStatus(id: string) {
-        if (!token) return;
-
         try {
             setSaving(true);
             setError("");
             setSuccess("");
 
-            const updatedRoom = await toggleRoomStatus(id, token);
+            const updatedRoom = await toggleRoomStatus(id);
 
             setRooms((current) =>
                 current.map((room) =>

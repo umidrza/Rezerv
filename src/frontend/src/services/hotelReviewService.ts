@@ -10,26 +10,19 @@ export function getHotelReviews(hotelId: string): Promise<HotelReview[]> {
 
 export function createHotelReview(
   hotelId: string,
-  data: CreateHotelReviewRequest,
-  token: string,
+  data: CreateHotelReviewRequest
 ): Promise<HotelReview> {
   return apiRequest<HotelReview>(
     `/hotels/${hotelId}/reviews`,
     {
       method: "POST",
       body: JSON.stringify(data),
-    },
-    token,
+    }
   );
 }
 
-export function canReviewHotel(
-  hotelId: string,
-  token: string,
-): Promise<boolean> {
+export function canReviewHotel(hotelId: string): Promise<boolean> {
   return apiRequest<boolean>(
-    `/hotels/${hotelId}/reviews/eligibility`,
-    {},
-    token,
+    `/hotels/${hotelId}/reviews/eligibility`
   );
 }

@@ -32,7 +32,7 @@ export default function RegisterPage() {
         try {
             const result = await registerUser(fullName, email, password);
 
-            login(result.token);
+            login(result);
             navigate("/");
         } catch (err) {
             setError(
@@ -101,7 +101,8 @@ export default function RegisterPage() {
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Create a password"
                             required
-                            minLength={6}
+                            minLength={8}
+                            maxLength={128}
                             autoComplete="new-password"
                             className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                         />
@@ -118,7 +119,8 @@ export default function RegisterPage() {
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Confirm your password"
                             required
-                            minLength={6}
+                            minLength={8}
+                            maxLength={128}
                             autoComplete="new-password"
                             className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                         />

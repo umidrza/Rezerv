@@ -27,7 +27,7 @@ export default function LoginPage() {
         try {
             const result = await loginUser(email, password);
 
-            login(result.token);
+            login(result);
             navigate(from, { replace: true });
         } catch (err) {
             setError(

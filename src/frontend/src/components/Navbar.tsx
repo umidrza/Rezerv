@@ -1,15 +1,25 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../features/auth/AuthContext";
 
 export default function Navbar() {
-  const { isAuthenticated, isAdmin, isHotelManager, isCustomer, logout } =
+  const { isAuthenticated, isLoading, isAdmin, isHotelManager, isCustomer, logout } =
     useAuth();
 
   const navigate = useNavigate();
+  const [logoutError, setLogoutError] = useState("");
 
-  function handleLogout() {
-    logout();
-    navigate("/login");
+  async function handleLogout() {
+    setLogoutError("");
+
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      setLogoutError(
+        error instanceof Error ? error.message : "Unable to log out."
+      );
+    }
   }
 
   return (
@@ -26,7 +36,11 @@ export default function Navbar() {
         </Link>
 
         <nav className="flex items-center gap-6">
-          {isAuthenticated ? (
+          {isLoading ? (
+            <span role="status" className="text-sm text-slate-500">
+              Checking session...
+            </span>
+          ) : isAuthenticated ? (
             <>
               <Link
                 to="/dashboard"
@@ -63,11 +77,17 @@ export default function Navbar() {
               )}
 
               <button
+                type="button"
                 onClick={handleLogout}
                 className="text-sm font-medium text-slate-700 hover:text-orange-500"
               >
                 Logout
               </button>
+              {logoutError && (
+                <span role="alert" className="text-sm text-red-600">
+                  {logoutError}
+                </span>
+              )}
             </>
           ) : (
             <>

@@ -12,12 +12,17 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const {
     isAuthenticated,
+    isLoading,
     isAdmin,
     isHotelManager,
     isCustomer,
   } = useAuth();
 
   const location = useLocation();
+
+  if (isLoading) {
+    return <p role="status" className="p-6 text-center text-slate-500">Checking your session...</p>;
+  }
 
   if (!isAuthenticated) {
     return (

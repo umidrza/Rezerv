@@ -69,20 +69,34 @@ public class AuthService : IAuthService
         return await GenerateTokenAsync(user);
     }
 
+    public async Task<AuthUserDto?> GetCurrentUserAsync(Guid userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return null;
+
+        var roles = await _userManager.GetRolesAsync(user);
+        return new AuthUserDto(
+            user.Id,
+            user.Email ?? string.Empty,
+            user.FullName,
+            roles.ToArray());
+    }
+
     private async Task<AuthResponseDto> GenerateTokenAsync(ApplicationUser user)
     {
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email!),
-            new(ClaimTypes.Name, user.FullName)
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email!),
+            new(JwtRegisteredClaimNames.Name, user.FullName)
         };
 
         var roles = await _userManager.GetRolesAsync(user);
 
         foreach (var role in roles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim("role", role));
         }
 
         var key = new SymmetricSecurityKey(
@@ -99,12 +113,14 @@ public class AuthService : IAuthService
                 _jwtSettings.ExpirationInMinutes),
             signingCredentials: credentials);
 
-        return await Task.FromResult(new AuthResponseDto
-        {
-            UserId = user.Id,
-            FullName = user.FullName,
-            Email = user.Email!,
-            Token = new JwtSecurityTokenHandler().WriteToken(token)
-        });
+        var userDto = new AuthUserDto(
+            user.Id,
+            user.Email!,
+            user.FullName,
+            roles.ToArray());
+
+        return new AuthResponseDto(
+            userDto,
+            new JwtSecurityTokenHandler().WriteToken(token));
     }
 }

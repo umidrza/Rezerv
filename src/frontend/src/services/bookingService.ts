@@ -26,78 +26,60 @@ export function checkRoomAvailability(
 }
 
 export function createBooking(
-    request: CreateBookingRequest,
-    token: string
+    request: CreateBookingRequest
 ): Promise<Booking> {
     return apiRequest<Booking>(
         "/bookings",
         {
             method: "POST",
             body: JSON.stringify(request),
-        },
-        token
+        }
     );
 }
 
-export function getMyBookings(token: string): Promise<Booking[]> {
-    return apiRequest<Booking[]>(
-        "/bookings/my-bookings",
-        {},
-        token
-    );
+export function getMyBookings(): Promise<Booking[]> {
+    return apiRequest<Booking[]>("/bookings/my-bookings");
 }
 
 export function getBookingById(
-    bookingId: string,
-    token: string
+    bookingId: string
 ): Promise<Booking> {
     return apiRequest<Booking>(
-        `/bookings/${encodeURIComponent(bookingId)}`,
-        {},
-        token
+        `/bookings/${encodeURIComponent(bookingId)}`
     );
 }
 
 export function getHotelBookings(
-    hotelId: string,
-    token: string
+    hotelId: string
 ): Promise<Booking[]> {
     return apiRequest<Booking[]>(
-        `/bookings/hotel/${encodeURIComponent(hotelId)}`,
-        {},
-        token
+        `/bookings/hotel/${encodeURIComponent(hotelId)}`
     );
 }
 
 export function approveBooking(
-    bookingId: string,
-    token: string
+    bookingId: string
 ): Promise<void> {
     return apiRequest<void>(
         `/bookings/${encodeURIComponent(bookingId)}/approve`,
-        { method: "PUT" },
-        token
+        { method: "PUT" }
     );
 }
 
 export function rejectBooking(
-    bookingId: string,
-    token: string
+    bookingId: string
 ): Promise<void> {
     return apiRequest<void>(
         `/bookings/${encodeURIComponent(bookingId)}/reject`,
-        { method: "PUT" },
-        token
+        { method: "PUT" }
     );
 }
 
 export function cancelBooking(
-    bookingId: string,
-    token: string
+    bookingId: string
 ): Promise<void> {
     return apiRequest<void>(
         `/bookings/${encodeURIComponent(bookingId)}/cancel`,
-        { method: "PUT" },
-        token
+        { method: "PUT" }
     );
 }

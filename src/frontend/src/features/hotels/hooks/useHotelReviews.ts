@@ -13,7 +13,7 @@ import { canReviewHotel } from "../../../services/hotelReviewService";
 
 export function useHotelReviews(
   hotelId: string | undefined,
-  token: string | null,
+  isCustomer: boolean,
 ) {
   const [reviews, setReviews] = useState<HotelReview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +40,7 @@ export function useHotelReviews(
   }, [hotelId]);
 
   const checkEligibility = useCallback(async () => {
-    if (!hotelId || !token) {
+    if (!hotelId || !isCustomer) {
       setCanReview(false);
       return;
     }
@@ -48,14 +48,14 @@ export function useHotelReviews(
     try {
       setEligibilityLoading(true);
 
-      const result = await canReviewHotel(hotelId, token);
+      const result = await canReviewHotel(hotelId);
       setCanReview(result);
     } catch {
       setCanReview(false);
     } finally {
       setEligibilityLoading(false);
     }
-  }, [hotelId, token]);
+  }, [hotelId, isCustomer]);
 
   useEffect(() => {
     checkEligibility();
@@ -66,7 +66,7 @@ export function useHotelReviews(
   }, [fetchReviews]);
 
   const submitReview = async (data: CreateHotelReviewRequest) => {
-    if (!hotelId || !token) {
+    if (!hotelId || !isCustomer) {
       throw new Error("You must be logged in to submit a review.");
     }
 
@@ -74,7 +74,7 @@ export function useHotelReviews(
       setSubmitting(true);
       setError(null);
 
-      const review = await createHotelReview(hotelId, data, token);
+      const review = await createHotelReview(hotelId, data);
 
       setReviews((current) => [review, ...current]);
 

@@ -12,7 +12,7 @@ import {
 
 export default function HotelsPage() {
   const search = useHotelSearch();
-  const { token, isCustomer } = useAuth();
+  const { isCustomer } = useAuth();
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [favoriteLoadingId, setFavoriteLoadingId] = useState<string | null>(
@@ -27,12 +27,12 @@ export default function HotelsPage() {
   }, []);
 
   useEffect(() => {
-    if (!token || !isCustomer) {
+    if (!isCustomer) {
       setFavoriteIds(new Set());
       return;
     }
 
-    getMyFavorites(token)
+    getMyFavorites()
       .then((favorites) => {
         setFavoriteIds(new Set(favorites.map((hotel) => hotel.id)));
       })
@@ -41,10 +41,10 @@ export default function HotelsPage() {
           err instanceof Error ? err.message : "Failed to load favorites.",
         );
       });
-  }, [token, isCustomer]);
+  }, [isCustomer]);
 
   async function handleToggleFavorite(hotelId: string) {
-    if (!token || favoriteLoadingId) return;
+    if (favoriteLoadingId) return;
 
     const currentlyFavorite = favoriteIds.has(hotelId);
 
@@ -53,9 +53,9 @@ export default function HotelsPage() {
 
     try {
       if (currentlyFavorite) {
-        await removeFavorite(hotelId, token);
+        await removeFavorite(hotelId);
       } else {
-        await addFavorite(hotelId, token);
+        await addFavorite(hotelId);
       }
 
       setFavoriteIds((previous) => {

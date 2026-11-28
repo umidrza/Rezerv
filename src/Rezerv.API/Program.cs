@@ -15,6 +15,8 @@ using Rezerv.API.Middleware;
 using Microsoft.Extensions.Options;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Rezerv.API.Authentication;
+using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,18 +33,14 @@ if (allowedOrigins.Length == 0 ||
         "Cors:AllowedOrigins must contain at least one non-empty origin.");
 }
 
-if (!builder.Environment.IsDevelopment() &&
-    allowedOrigins.Contains("*", StringComparer.Ordinal))
+if (allowedOrigins.Contains("*", StringComparer.Ordinal))
 {
     throw new InvalidOperationException(
-        "Cors:AllowedOrigins cannot contain '*' outside the Development environment.");
+        "Cors:AllowedOrigins cannot contain '*' when credentialed cookie authentication is enabled.");
 }
 
 foreach (var origin in allowedOrigins)
 {
-    if (origin == "*" && builder.Environment.IsDevelopment())
-        continue;
-
     if (!Uri.TryCreate(origin, UriKind.Absolute, out var parsedOrigin) ||
         parsedOrigin is null ||
         (parsedOrigin.Scheme != Uri.UriSchemeHttp &&
@@ -96,6 +94,7 @@ builder.Services
     .Configure<IOptions<JwtSettings>>((options, jwtOptions) =>
     {
         var jwtSettings = jwtOptions.Value;
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -105,9 +104,24 @@ builder.Services
 
             ValidIssuer = jwtSettings.Issuer,
             ValidAudience = jwtSettings.Audience,
+            NameClaimType = JwtRegisteredClaimNames.Name,
+            RoleClaimType = "role",
 
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtSettings.Secret))
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.TryGetValue(
+                    AuthCookieDefaults.Name, out var token))
+                {
+                    context.Token = token;
+                }
+
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -136,14 +150,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        if (allowedOrigins.Contains("*", StringComparer.Ordinal))
-            policy.AllowAnyOrigin();
-        else
-            policy.WithOrigins(allowedOrigins);
-
         policy
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 

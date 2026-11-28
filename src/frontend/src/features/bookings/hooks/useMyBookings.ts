@@ -3,23 +3,17 @@ import { useCallback, useEffect, useState } from "react";
 import { getMyBookings } from "../../../services/bookingService";
 import type { Booking } from "../../../types/booking";
 
-export function useMyBookings(token: string | null) {
+export function useMyBookings() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     const loadBookings = useCallback(async () => {
-        if (!token) {
-            setError("Please log in to view your bookings.");
-            setLoading(false);
-            return;
-        }
-
         try {
             setLoading(true);
             setError("");
 
-            const result = await getMyBookings(token);
+            const result = await getMyBookings();
             setBookings(result);
         } catch (err) {
             setError(
@@ -30,7 +24,7 @@ export function useMyBookings(token: string | null) {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         loadBookings();

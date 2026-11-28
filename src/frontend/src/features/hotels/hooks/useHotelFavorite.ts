@@ -8,44 +8,44 @@ import {
 import { useAuth } from "../../auth/AuthContext";
 
 export function useHotelFavorite(hotelId: string) {
-  const { token, isCustomer } = useAuth();
+  const { isCustomer } = useAuth();
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const loadFavoriteStatus = useCallback(async () => {
-    if (!token || !isCustomer) {
+    if (!isCustomer) {
       setIsFavorite(false);
       return;
     }
 
     try {
-      const result = await checkIsFavorite(hotelId, token);
+      const result = await checkIsFavorite(hotelId);
       setIsFavorite(result);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to check favorite status.",
       );
     }
-  }, [hotelId, token, isCustomer]);
+  }, [hotelId, isCustomer]);
 
   useEffect(() => {
     loadFavoriteStatus();
   }, [loadFavoriteStatus]);
 
   async function toggleFavorite() {
-    if (!token || !isCustomer || loading) return;
+    if (!isCustomer || loading) return;
 
     setLoading(true);
     setError("");
 
     try {
       if (isFavorite) {
-        await removeFavorite(hotelId, token);
+        await removeFavorite(hotelId);
         setIsFavorite(false);
       } else {
-        await addFavorite(hotelId, token);
+        await addFavorite(hotelId);
         setIsFavorite(true);
       }
     } catch (err) {

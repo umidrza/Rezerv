@@ -1,6 +1,5 @@
 
 import { useParams } from "react-router";
-import { useAuth } from "../../auth/AuthContext";
 
 import { useHotelBookings } from "../hooks/useHotelBookings";
 import { useBookingActions } from "../hooks/useBookingActions";
@@ -18,21 +17,19 @@ import ErrorMessage from "../../../components/ErrorMessage";
 
 export default function HotelBookingsPage() {
     const { hotelId } = useParams<{ hotelId: string }>();
-    const { token } = useAuth();
-
     const {
         bookings,
         setBookings,
         loading,
         error: loadingError,
-    } = useHotelBookings(hotelId, token);
+    } = useHotelBookings(hotelId);
 
     const {
         processingBookingId,
         processingAction,
         error: actionError,
         executeAction,
-    } = useBookingActions(token);
+    } = useBookingActions();
 
     async function handleAction(
         bookingId: string,

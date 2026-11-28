@@ -11,15 +11,13 @@ import {
 import type { Dashboard } from "../types/dashboard";
 
 export default function DashboardPage() {
-    const { token, isAdmin, isHotelManager, isCustomer } = useAuth();
+    const { isAdmin, isHotelManager, isCustomer } = useAuth();
 
     const [dashboard, setDashboard] = useState<Dashboard | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
-        if (!token) return;
-
         async function loadDashboard() {
             try {
                 setLoading(true);
@@ -28,11 +26,11 @@ export default function DashboardPage() {
                 let data: Dashboard;
 
                 if (isAdmin) {
-                    data = await getAdminDashboard(token!);
+                    data = await getAdminDashboard();
                 } else if (isHotelManager) {
-                    data = await getManagerDashboard(token!);
+                    data = await getManagerDashboard();
                 } else if (isCustomer) {
-                    data = await getCustomerDashboard(token!);
+                    data = await getCustomerDashboard();
                 } else {
                     throw new Error("Unauthorized dashboard access.");
                 }
@@ -46,7 +44,7 @@ export default function DashboardPage() {
         }
 
         loadDashboard();
-    }, [token, isAdmin, isHotelManager, isCustomer]);
+    }, [isAdmin, isHotelManager, isCustomer]);
 
     if (loading) {
         return (

@@ -15,43 +15,35 @@ export function getRoomsByRoomType(
 }
 
 export function createRoom(
-    data: CreateRoomRequest,
-    token: string
+    data: CreateRoomRequest
 ): Promise<Room> {
     return apiRequest<Room>(
         "/rooms",
         {
             method: "POST",
             body: JSON.stringify(data),
-        },
-        token
+        }
     );
 }
 
 export function updateRoom(
     id: string,
-    data: UpdateRoomRequest,
-    token: string
+    data: UpdateRoomRequest
 ): Promise<Room> {
     return apiRequest<Room>(
         `/rooms/${encodeURIComponent(id)}`,
         {
             method: "PUT",
             body: JSON.stringify(data),
-        },
-        token
+        }
     );
 }
 
-export function toggleRoomStatus(
-    id: string,
-    token: string
-): Promise<Room> {
+export function toggleRoomStatus(id: string): Promise<Room> {
     return apiRequest<Room>(
         `/rooms/${encodeURIComponent(id)}/status`,
         {
             method: "PATCH",
-        },
-        token
+        }
     );
 }

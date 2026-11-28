@@ -11,7 +11,6 @@ import type {
 
 interface UseHotelBookingProps {
     hotel: Hotel | null;
-    token: string | null;
     isAuthenticated: boolean;
     onLoginRequired: (draft: BookingDraft) => void;
     onBookingCreated: (bookingId: string) => void;
@@ -19,7 +18,6 @@ interface UseHotelBookingProps {
 
 export function useHotelBooking({
     hotel,
-    token,
     isAuthenticated,
     onLoginRequired,
     onBookingCreated,
@@ -134,7 +132,7 @@ export function useHotelBooking({
     async function handleConfirmBooking() {
         if (!hotel || !selectedRoomId) return;
 
-        if (!isAuthenticated || !token) {
+        if (!isAuthenticated) {
             onLoginRequired({
                 hotelId: hotel.id,
                 roomId: selectedRoomId,
@@ -157,7 +155,7 @@ export function useHotelBooking({
             setBookingLoading(true);
             setError("");
 
-            const booking = await createBooking(request, token);
+            const booking = await createBooking(request);
 
             setShowConfirmation(false);
             onBookingCreated(booking.id);

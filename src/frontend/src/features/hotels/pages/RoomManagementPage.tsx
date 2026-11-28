@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 
-import { useAuth } from "../../auth/AuthContext";
 import { useRoomManagement } from "../hooks/useRoomManagement";
 
 import RoomManagementCard from "../components/RoomManagementCard";
@@ -14,8 +13,6 @@ import type { Room } from "../../../types/room";
 
 export default function RoomManagementPage() {
     const { roomTypeId } = useParams();
-    const { token } = useAuth();
-
     const {
         rooms,
         loading,
@@ -25,7 +22,7 @@ export default function RoomManagementPage() {
         addRoom,
         editRoom,
         changeRoomStatus,
-    } = useRoomManagement(roomTypeId ?? "", token);
+    } = useRoomManagement(roomTypeId ?? "");
 
     const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);

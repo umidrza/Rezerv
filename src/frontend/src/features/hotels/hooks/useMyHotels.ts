@@ -24,7 +24,7 @@ interface UseMyHotelsResult {
     toggleHotelStatus: (hotel: Hotel) => Promise<void>;
 }
 
-export function useMyHotels(token: string | null): UseMyHotelsResult {
+export function useMyHotels(): UseMyHotelsResult {
     const [hotels, setHotels] = useState<Hotel[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -32,15 +32,9 @@ export function useMyHotels(token: string | null): UseMyHotelsResult {
     const [success, setSuccess] = useState("");
 
     const loadHotels = useCallback(async () => {
-        if (!token) {
-            setError("Please log in to continue.");
-            setLoading(false);
-            return;
-        }
-
         try {
             setError("");
-            const result = await getMyHotels(token);
+            const result = await getMyHotels();
             setHotels(result);
         } catch (err) {
             setError(
@@ -49,7 +43,7 @@ export function useMyHotels(token: string | null): UseMyHotelsResult {
         } finally {
             setLoading(false);
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         loadHotels();
@@ -59,14 +53,12 @@ export function useMyHotels(token: string | null): UseMyHotelsResult {
         hotelId: string,
         form: UpdateHotelRequest
     ) {
-        if (!token) return;
-
         setSaving(true);
         setError("");
         setSuccess("");
 
         try {
-            const updatedHotel = await updateHotel(hotelId, form, token);
+            const updatedHotel = await updateHotel(hotelId, form);
 
             setHotels((current) =>
                 current.map((hotel) =>
@@ -86,8 +78,6 @@ export function useMyHotels(token: string | null): UseMyHotelsResult {
     }
 
     async function toggleHotelStatus(hotel: Hotel) {
-        if (!token) return;
-
         const action = hotel.isActive ? "deactivate" : "activate";
 
         if (!window.confirm(`Are you sure you want to ${action} this hotel?`)) {
@@ -99,9 +89,9 @@ export function useMyHotels(token: string | null): UseMyHotelsResult {
 
         try {
             if (hotel.isActive) {
-                await deactivateHotel(hotel.id, token);
+                await deactivateHotel(hotel.id);
             } else {
-                await activateHotel(hotel.id, token);
+                await activateHotel(hotel.id);
             }
 
             setHotels((current) =>

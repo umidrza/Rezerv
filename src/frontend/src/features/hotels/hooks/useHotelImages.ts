@@ -11,7 +11,6 @@ import type { HotelImage } from "../../../types/hotel";
 
 export function useHotelImages(
     hotelId: string,
-    token: string | null,
     initialPrimaryImageId: string | null
 ) {
     const [images, setImages] = useState<HotelImage[]>([]);
@@ -54,14 +53,12 @@ export function useHotelImages(
     }, [hotelId, loadImages]);
 
     async function uploadImage(file: File) {
-        if (!token) return;
-
         try {
             setSaving(true);
             setError("");
             setSuccess("");
 
-            const image = await uploadHotelImage(hotelId, file, token);
+            const image = await uploadHotelImage(hotelId, file);
 
             setImages((current) => [...current, image]);
 
@@ -82,14 +79,12 @@ export function useHotelImages(
     }
 
     async function selectPrimaryImage(imageId: string) {
-        if (!token) return;
-
         try {
             setSaving(true);
             setError("");
             setSuccess("");
 
-            await setPrimaryHotelImage(hotelId, imageId, token);
+            await setPrimaryHotelImage(hotelId, imageId);
 
             setPrimaryImageId(imageId);
             setSuccess("Primary image updated successfully.");
@@ -105,14 +100,12 @@ export function useHotelImages(
     }
 
     async function removeImage(imageId: string) {
-        if (!token) return;
-
         try {
             setSaving(true);
             setError("");
             setSuccess("");
 
-            await deleteHotelImage(hotelId, imageId, token);
+            await deleteHotelImage(hotelId, imageId);
 
             setImages((current) =>
                 current.filter((image) => image.id !== imageId)

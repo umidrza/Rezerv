@@ -12,14 +12,11 @@ import LoadingState from "../../../components/LoadingState";
 import ErrorMessage from "../../../components/ErrorMessage";
 import BookingStatusBadge from "../components/BookingStatusBadge";
 
-import { useAuth } from "../../auth/AuthContext";
 import { useBookingDetails } from "../hooks/useBookingDetails";
 
 export default function BookingDetailsPage() {
     const { id } = useParams<{ id: string }>();
-    const { token } = useAuth();
-
-    const { booking, loading, error } = useBookingDetails(id, token);
+    const { booking, loading, error } = useBookingDetails(id);
 
     if (loading) {
         return <LoadingState message="Loading booking details..." />;

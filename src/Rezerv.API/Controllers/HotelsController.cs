@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.DTOs.Hotel;
 using Rezerv.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Rezerv.API.Controllers;
 
@@ -70,7 +70,7 @@ public class HotelsController : ControllerBase
     [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> GetMyHotels()
     {
-        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userIdValue = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 
         if (!Guid.TryParse(userIdValue, out var userId))
             return Unauthorized();
@@ -89,7 +89,7 @@ public class HotelsController : ControllerBase
         Guid id,
         UpdateHotelDto dto)
     {
-        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userIdValue = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 
         if (!Guid.TryParse(userIdValue, out var userId))
             return Unauthorized();
@@ -139,7 +139,7 @@ public class HotelsController : ControllerBase
         Guid id,
         bool isActive)
     {
-        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userIdValue = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 
         if (!Guid.TryParse(userIdValue, out var userId))
             return Unauthorized();

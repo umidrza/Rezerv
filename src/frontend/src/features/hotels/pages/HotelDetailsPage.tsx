@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
-import { Heart } from "lucide-react";
 
 import { useAuth } from "../../auth/AuthContext";
 
@@ -29,7 +28,7 @@ export default function HotelDetailsPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { token, isAuthenticated, isCustomer } = useAuth();
+  const { isAuthenticated, isCustomer } = useAuth();
 
   const { hotel, roomTypes, loading, error: hotelError } = useHotelDetails(id);
 
@@ -38,25 +37,25 @@ export default function HotelDetailsPage() {
   const [favoriteError, setFavoriteError] = useState("");
 
   useEffect(() => {
-    if (!token || !isCustomer || !id) return;
+    if (!isCustomer || !id) return;
 
-    checkIsFavorite(id, token)
+    checkIsFavorite(id)
       .then(setIsFavorite)
       .catch(() => setFavoriteError("Failed to load favorite status."));
-  }, [id, token, isCustomer]);
+  }, [id, isCustomer]);
 
   async function handleToggleFavorite() {
-    if (!token || !id || favoriteLoading) return;
+    if (!id || favoriteLoading) return;
 
     setFavoriteLoading(true);
     setFavoriteError("");
 
     try {
       if (isFavorite) {
-        await removeFavorite(id, token);
+        await removeFavorite(id);
         setIsFavorite(false);
       } else {
-        await addFavorite(id, token);
+        await addFavorite(id);
         setIsFavorite(true);
       }
     } catch (error) {
@@ -76,11 +75,10 @@ export default function HotelDetailsPage() {
     submitReview,
     canReview,
     eligibilityLoading,
-  } = useHotelReviews(id, token);
+  } = useHotelReviews(id, isCustomer);
 
   const booking = useHotelBooking({
     hotel,
-    token,
     isAuthenticated,
 
     onLoginRequired: (draft) => {
@@ -141,6 +139,12 @@ export default function HotelDetailsPage() {
           onToggleFavorite={isCustomer ? handleToggleFavorite : undefined}
           favoriteLoading={favoriteLoading}
         />
+
+        {favoriteError && (
+          <p role="alert" className="mt-4 text-sm text-red-600">
+          {favoriteError}
+          </p>
+        )}
 
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
           <HotelRoomList

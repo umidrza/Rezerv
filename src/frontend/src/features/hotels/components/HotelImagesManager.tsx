@@ -4,13 +4,11 @@ import API_BASE_URL from "../../../services/api";
 
 interface HotelImagesManagerProps {
     hotelId: string;
-    token: string | null;
     primaryImageId: string | null;
 }
 
 export default function HotelImagesManager({
     hotelId,
-    token,
     primaryImageId,
 }: HotelImagesManagerProps) {
     const {
@@ -23,7 +21,7 @@ export default function HotelImagesManager({
         uploadImage,
         selectPrimaryImage,
         removeImage,
-    } = useHotelImages(hotelId, token, primaryImageId);
+    } = useHotelImages(hotelId, primaryImageId);
 
     const imageBaseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
 

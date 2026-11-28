@@ -9,7 +9,7 @@ import {
 
 export type BookingAction = "approve" | "reject" | "cancel";
 
-export function useBookingActions(token: string | null) {
+export function useBookingActions() {
     const [processingBookingId, setProcessingBookingId] =
         useState<string | null>(null);
 
@@ -22,7 +22,7 @@ export function useBookingActions(token: string | null) {
         bookingId: string,
         action: BookingAction
     ): Promise<boolean> {
-        if (!token || processingBookingId !== null) {
+        if (processingBookingId !== null) {
             setError("Unable to process this booking.");
             return false;
         }
@@ -34,15 +34,15 @@ export function useBookingActions(token: string | null) {
         try {
             switch (action) {
                 case "approve":
-                    await approveBooking(bookingId, token);
+                    await approveBooking(bookingId);
                     break;
 
                 case "reject":
-                    await rejectBooking(bookingId, token);
+                    await rejectBooking(bookingId);
                     break;
 
                 case "cancel":
-                    await cancelBooking(bookingId, token);
+                    await cancelBooking(bookingId);
                     break;
             }
 

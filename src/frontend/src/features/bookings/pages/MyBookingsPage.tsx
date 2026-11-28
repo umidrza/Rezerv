@@ -1,6 +1,4 @@
 
-import { useAuth } from "../../auth/AuthContext";
-
 import { useMyBookings } from "../hooks/useMyBookings";
 import { useBookingActions } from "../hooks/useBookingActions";
 
@@ -12,20 +10,18 @@ import LoadingState from "../../../components/LoadingState";
 import ErrorMessage from "../../../components/ErrorMessage";
 
 export default function MyBookingsPage() {
-  const { token } = useAuth();
-
   const {
     bookings,
     setBookings,
     loading,
     error: loadingError,
-  } = useMyBookings(token);
+  } = useMyBookings();
 
   const {
     processingBookingId,
     error: actionError,
     executeAction,
-  } = useBookingActions(token);
+  } = useBookingActions();
 
   async function handleCancelBooking(bookingId: string) {
     if (processingBookingId !== null) return;

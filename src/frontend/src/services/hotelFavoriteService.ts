@@ -1,39 +1,26 @@
 import { apiRequest } from "./api";
 import type { Hotel } from "../types/hotel";
 
-export function getMyFavorites(token: string): Promise<Hotel[]> {
-    return apiRequest<Hotel[]>("/favorites", {}, token);
+export function getMyFavorites(): Promise<Hotel[]> {
+    return apiRequest<Hotel[]>("/favorites");
 }
 
-export function addFavorite(
-    hotelId: string,
-    token: string
-): Promise<void> {
+export function addFavorite(hotelId: string): Promise<void> {
     return apiRequest<void>(
         `/favorites/${encodeURIComponent(hotelId)}`,
-        { method: "POST" },
-        token
+        { method: "POST" }
     );
 }
 
-export function removeFavorite(
-    hotelId: string,
-    token: string
-): Promise<void> {
+export function removeFavorite(hotelId: string): Promise<void> {
     return apiRequest<void>(
         `/favorites/${encodeURIComponent(hotelId)}`,
-        { method: "DELETE" },
-        token
+        { method: "DELETE" }
     );
 }
 
-export function isFavorite(
-    hotelId: string,
-    token: string
-): Promise<boolean> {
+export function isFavorite(hotelId: string): Promise<boolean> {
     return apiRequest<boolean>(
-        `/favorites/${encodeURIComponent(hotelId)}/status`,
-        {},
-        token
+        `/favorites/${encodeURIComponent(hotelId)}/status`
     );
 }

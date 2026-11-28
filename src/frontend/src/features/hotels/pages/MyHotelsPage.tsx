@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 
-import { useAuth } from "../../auth/AuthContext";
 import { useMyHotels } from "../hooks/useMyHotels";
 
 import MyHotelCard from "../components/MyHotelCard";
@@ -14,8 +13,6 @@ import LoadingState from "../../../components/LoadingState";
 import type { Hotel, UpdateHotelRequest } from "../../../types/hotel";
 
 export default function MyHotelsPage() {
-    const { token } = useAuth();
-
     const {
         hotels,
         loading,
@@ -26,7 +23,7 @@ export default function MyHotelsPage() {
         setSuccess,
         updateHotelDetails,
         toggleHotelStatus,
-    } = useMyHotels(token);
+    } = useMyHotels();
 
     const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
     const [imageHotel, setImageHotel] = useState<Hotel | null>(null);
@@ -135,7 +132,6 @@ export default function MyHotelsPage() {
 
                     <HotelImagesManager
                         hotelId={imageHotel.id}
-                        token={token}
                         primaryImageId={imageHotel.primaryImageId}
                     />
                 </div>

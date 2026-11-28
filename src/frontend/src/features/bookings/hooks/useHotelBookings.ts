@@ -5,15 +5,14 @@ import { getHotelBookings } from "../../../services/bookingService";
 import type { Booking } from "../../../types/booking";
 
 export function useHotelBookings(
-    hotelId: string | undefined,
-    token: string | null
+    hotelId: string | undefined
 ) {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     const loadBookings = useCallback(async () => {
-        if (!hotelId || !token) {
+        if (!hotelId) {
             setError("Unable to load hotel bookings.");
             setLoading(false);
             return;
@@ -23,7 +22,7 @@ export function useHotelBookings(
             setLoading(true);
             setError("");
 
-            const result = await getHotelBookings(hotelId, token);
+            const result = await getHotelBookings(hotelId);
             setBookings(result);
         } catch (err) {
             setError(
@@ -34,7 +33,7 @@ export function useHotelBookings(
         } finally {
             setLoading(false);
         }
-    }, [hotelId, token]);
+    }, [hotelId]);
 
     useEffect(() => {
         loadBookings();

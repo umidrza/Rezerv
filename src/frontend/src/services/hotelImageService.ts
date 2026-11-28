@@ -3,8 +3,7 @@ import type { HotelImage } from "../types/hotel";
 
 export async function uploadHotelImage(
     hotelId: string,
-    file: File,
-    token: string
+    file: File
 ): Promise<HotelImage> {
     const formData = new FormData();
 
@@ -16,8 +15,7 @@ export async function uploadHotelImage(
         {
             method: "POST",
             body: formData,
-        },
-        token
+        }
     );
 }
 
@@ -31,24 +29,20 @@ export function getHotelImages(
 
 export function setPrimaryHotelImage(
     hotelId: string,
-    imageId: string,
-    token: string
+    imageId: string
 ): Promise<void> {
     return apiRequest<void>(
         `/hotel-images/${encodeURIComponent(hotelId)}/${encodeURIComponent(imageId)}/primary`,
-        { method: "PUT" },
-        token
+        { method: "PUT" }
     );
 }
 
 export function deleteHotelImage(
     hotelId: string,
-    imageId: string,
-    token: string
+    imageId: string
 ): Promise<void> {
     return apiRequest<void>(
         `/hotel-images/${encodeURIComponent(hotelId)}/${encodeURIComponent(imageId)}`,
-        { method: "DELETE" },
-        token
+        { method: "DELETE" }
     );
 }

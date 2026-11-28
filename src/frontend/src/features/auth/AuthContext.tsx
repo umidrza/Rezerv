@@ -1,15 +1,19 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
-import { getUserRoles, isTokenValid } from "./utils/tokenUtils";
+import { getUserRoles } from "./utils/tokenUtils";
+import { getCurrentUser, logoutUser } from "../../services/authService";
+import { ApiError } from "../../services/api";
+import type { AuthUser } from "../../types/auth";
 
 interface AuthContextType {
-    token: string | null;
+    user: AuthUser | null;
     isAuthenticated: boolean;
+    isLoading: boolean;
     isAdmin: boolean;
     isHotelManager: boolean;
     isCustomer: boolean;
-    login: (token: string) => void;
-    logout: () => void;
+    login: (user: AuthUser) => void;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,42 +23,68 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-    const [token, setToken] = useState<string | null>(() => {
-        const savedToken = localStorage.getItem("token");
+    const [user, setUser] = useState<AuthUser | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const sessionGeneration = useRef(0);
 
-        if (!isTokenValid(savedToken)) {
-            localStorage.removeItem("token");
-            return null;
-        }
+    const roles = getUserRoles(user);
 
-        return savedToken;
-    });
-
-    const roles = getUserRoles(token);
-
-    const isAuthenticated = Boolean(token);
+    const isAuthenticated = Boolean(user);
     const isAdmin = roles.includes("Admin");
     const isHotelManager = roles.includes("HotelManager");
     const isCustomer = roles.includes("Customer");
 
-    const login = useCallback((token: string) => {
-        if (!isTokenValid(token)) {
-            throw new Error("Invalid or expired token.");
-        }
-
-        localStorage.setItem("token", token);
-        setToken(token);
+    const login = useCallback((authenticatedUser: AuthUser) => {
+        sessionGeneration.current += 1;
+        setUser(authenticatedUser);
+        setIsLoading(false);
     }, []);
 
-    const logout = useCallback(() => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        setToken(null);
+    const logout = useCallback(async () => {
+        const generation = ++sessionGeneration.current;
+        await logoutUser();
+        if (generation === sessionGeneration.current) {
+            setUser(null);
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
+        const generation = sessionGeneration.current;
+
+        async function hydrateUser() {
+            try {
+                const currentUser = await getCurrentUser();
+                if (isMounted && generation === sessionGeneration.current) {
+                    setUser(currentUser);
+                }
+            } catch (error) {
+                if (
+                    isMounted &&
+                    generation === sessionGeneration.current &&
+                    !(error instanceof ApiError && error.status === 401)
+                ) {
+                    console.error("Failed to restore the current session.", error);
+                }
+            } finally {
+                if (isMounted && generation === sessionGeneration.current) {
+                    setIsLoading(false);
+                }
+            }
+        }
+
+        void hydrateUser();
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     useEffect(() => {
         function handleUnauthorized() {
-            logout();
+            sessionGeneration.current += 1;
+            setUser(null);
+            setIsLoading(false);
         }
 
         window.addEventListener("auth:unauthorized", handleUnauthorized);
@@ -62,13 +92,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return () => {
             window.removeEventListener("auth:unauthorized", handleUnauthorized);
         };
-    }, [logout]);
+    }, []);
 
     return (
         <AuthContext.Provider
             value={{
-                token,
+                user,
                 isAuthenticated,
+                isLoading,
                 isAdmin,
                 isHotelManager,
                 isCustomer,
