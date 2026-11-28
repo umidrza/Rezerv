@@ -129,6 +129,7 @@ export default function HotelDetailsPage() {
 
         <HotelImageGallery
           hotelId={hotel.id}
+          hotelName={hotel.name}
           primaryImageId={hotel.primaryImageId ?? null}
           primaryImageUrl={hotel.primaryImageUrl ?? null}
         />

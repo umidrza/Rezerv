@@ -11,7 +11,8 @@ import type {
 import type { RoomType } from "../types/roomType";
 
 export function searchHotels(
-    params: SearchHotelsParams
+    params: SearchHotelsParams,
+    signal?: AbortSignal
 ): Promise<PaginatedResult<Hotel>> {
     const queryParams = new URLSearchParams();
 
@@ -26,7 +27,7 @@ export function searchHotels(
         ? `/hotels/search?${query}`
         : "/hotels/search";
 
-    return apiRequest<PaginatedResult<Hotel>>(endpoint);
+    return apiRequest<PaginatedResult<Hotel>>(endpoint, {}, signal);
 }
 
 export function getHotelById(id: string): Promise<Hotel> {

@@ -14,7 +14,8 @@ export class ApiError extends Error {
 
 export async function apiRequest<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    signal?: AbortSignal
 ): Promise<T> {
     const headers = new Headers(options.headers);
 
@@ -29,6 +30,7 @@ export async function apiRequest<T>(
         ...options,
         credentials: "include",
         headers,
+        signal: signal ?? options.signal,
     });
 
     if (response.status === 401) {

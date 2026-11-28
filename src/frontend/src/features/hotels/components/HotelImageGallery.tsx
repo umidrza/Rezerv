@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { getHotelImages } from "../../../services/hotelImageService";
 import API_BASE_URL from "../../../services/api";
@@ -8,6 +8,7 @@ import type { HotelImage } from "../../../types/hotel";
 
 interface HotelImageGalleryProps {
     hotelId: string;
+    hotelName: string;
     primaryImageId: string | null;
     primaryImageUrl: string | null;
 }
@@ -19,6 +20,7 @@ interface GalleryImage {
 
 export default function HotelImageGallery({
     hotelId,
+    hotelName,
     primaryImageId,
     primaryImageUrl,
 }: HotelImageGalleryProps) {
@@ -28,7 +30,7 @@ export default function HotelImageGallery({
 
     const imageBaseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
 
-    function getImageUrl(imageUrl: string): string {
+    const getImageUrl = useCallback((imageUrl: string): string => {
         if (
             imageUrl.startsWith("http://") ||
             imageUrl.startsWith("https://")
@@ -37,7 +39,7 @@ export default function HotelImageGallery({
         }
 
         return `${imageBaseUrl}${imageUrl}`;
-    }
+    }, [imageBaseUrl]);
 
     useEffect(() => {
         async function loadImages() {
@@ -80,7 +82,7 @@ export default function HotelImageGallery({
         }
 
         loadImages();
-    }, [hotelId, primaryImageId, primaryImageUrl]);
+    }, [getImageUrl, hotelId, primaryImageId, primaryImageUrl]);
 
     function showPrevious() {
         setCurrentIndex((current) =>
@@ -109,11 +111,16 @@ export default function HotelImageGallery({
     }
 
     return (
-        <div className="space-y-4">
+        <div
+            role="region"
+            aria-roledescription="carousel"
+            aria-label={`${hotelName} photo gallery`}
+            className="space-y-4"
+        >
             <div className="group relative overflow-hidden rounded-xl bg-slate-200">
                 <img
                     src={images[currentIndex].url}
-                    alt="Hotel"
+                    alt={`${hotelName}, photo ${currentIndex + 1} of ${images.length}`}
                     className="h-96 w-full object-cover"
                 />
 
@@ -122,8 +129,8 @@ export default function HotelImageGallery({
                         <button
                             type="button"
                             onClick={showPrevious}
-                            aria-label="Previous image"
-                            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white opacity-0 transition hover:bg-black/70 group-hover:opacity-100"
+                            aria-label={`Previous photo of ${hotelName}`}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white opacity-0 transition hover:bg-black/70 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-300 group-hover:opacity-100"
                         >
                             &#10094;
                         </button>
@@ -131,8 +138,8 @@ export default function HotelImageGallery({
                         <button
                             type="button"
                             onClick={showNext}
-                            aria-label="Next image"
-                            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white opacity-0 transition hover:bg-black/70 group-hover:opacity-100"
+                            aria-label={`Next photo of ${hotelName}`}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white opacity-0 transition hover:bg-black/70 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-300 group-hover:opacity-100"
                         >
                             &#10095;
                         </button>
@@ -151,7 +158,8 @@ export default function HotelImageGallery({
                             key={image.id}
                             type="button"
                             onClick={() => setCurrentIndex(index)}
-                            aria-label={`Go to image ${index + 1}`}
+                            aria-label={`Show photo ${index + 1} of ${hotelName}`}
+                            aria-pressed={currentIndex === index}
                             className={`h-2.5 rounded-full transition-all ${
                                 currentIndex === index
                                     ? "w-7 bg-orange-500"

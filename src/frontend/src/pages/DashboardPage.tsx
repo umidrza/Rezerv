@@ -48,7 +48,11 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div
+                role="status"
+                aria-live="polite"
+                className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"
+            >
                 <p className="text-slate-500">Loading dashboard...</p>
             </div>
         );
@@ -56,7 +60,11 @@ export default function DashboardPage() {
 
     if (error || !dashboard) {
         return (
-            <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div
+                role="alert"
+                aria-live="assertive"
+                className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"
+            >
                 <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
                     {error || "Dashboard data unavailable."}
                 </p>
@@ -198,12 +206,12 @@ export default function DashboardPage() {
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
                                     <tr>
-                                        <th className="px-6 py-4 font-semibold">Hotel</th>
-                                        <th className="px-6 py-4 font-semibold">Room</th>
-                                        <th className="px-6 py-4 font-semibold">Check-in</th>
-                                        <th className="px-6 py-4 font-semibold">Check-out</th>
-                                        <th className="px-6 py-4 font-semibold">Total</th>
-                                        <th className="px-6 py-4 font-semibold">Status</th>
+                                        <th scope="col" className="px-6 py-4 font-semibold">Hotel</th>
+                                        <th scope="col" className="px-6 py-4 font-semibold">Room</th>
+                                        <th scope="col" className="px-6 py-4 font-semibold">Check-in</th>
+                                        <th scope="col" className="px-6 py-4 font-semibold">Check-out</th>
+                                        <th scope="col" className="px-6 py-4 font-semibold">Total</th>
+                                        <th scope="col" className="px-6 py-4 font-semibold">Status</th>
                                     </tr>
                                 </thead>
 

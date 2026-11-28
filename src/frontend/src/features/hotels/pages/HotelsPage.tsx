@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import HotelCard from "../components/HotelCard";
 import HotelSearchForm from "../components/HotelSearchForm";
@@ -12,6 +12,7 @@ import {
 
 export default function HotelsPage() {
   const search = useHotelSearch();
+  const { loadHotels } = search;
   const { isCustomer } = useAuth();
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -21,14 +22,41 @@ export default function HotelsPage() {
   const [favoriteError, setFavoriteError] = useState("");
 
   const hotelsSectionRef = useRef<HTMLElement>(null);
+  const searchControllerRef = useRef<AbortController | null>(null);
+
+  const runSearch = useCallback((pageNumber: number) => {
+    searchControllerRef.current?.abort();
+
+    const controller = new AbortController();
+    searchControllerRef.current = controller;
+
+    void loadHotels(pageNumber, controller.signal).finally(() => {
+      if (searchControllerRef.current === controller) {
+        searchControllerRef.current = null;
+      }
+    });
+  }, [loadHotels]);
 
   useEffect(() => {
-    search.loadHotels(1);
-  }, []);
+    searchControllerRef.current?.abort();
+  }, [
+    search.city,
+    search.country,
+    search.checkIn,
+    search.checkOut,
+    search.guests,
+    search.starRating,
+    search.minimumAverageRating,
+    search.sortBy,
+  ]);
+
+  useEffect(() => {
+    runSearch(1);
+    return () => searchControllerRef.current?.abort();
+  }, [runSearch]);
 
   useEffect(() => {
     if (!isCustomer) {
-      setFavoriteIds(new Set());
       return;
     }
 
@@ -80,7 +108,7 @@ export default function HotelsPage() {
 
   function handleSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    search.loadHotels(1);
+    runSearch(1);
 
     setTimeout(() => {
       hotelsSectionRef.current?.scrollIntoView({
@@ -142,7 +170,7 @@ export default function HotelsPage() {
             <HotelCard
               key={hotel.id}
               hotel={hotel}
-              isFavorite={favoriteIds.has(hotel.id)}
+              isFavorite={isCustomer && favoriteIds.has(hotel.id)}
               onToggleFavorite={
                 isCustomer ? () => handleToggleFavorite(hotel.id) : undefined
               }
@@ -155,7 +183,7 @@ export default function HotelsPage() {
           <div className="mt-8 flex items-center justify-center gap-4">
             <button
               disabled={search.page === 1 || search.loading}
-              onClick={() => search.loadHotels(search.page - 1)}
+              onClick={() => runSearch(search.page - 1)}
               className="rounded-lg border px-4 py-2 disabled:opacity-40"
             >
               Previous
@@ -167,7 +195,7 @@ export default function HotelsPage() {
 
             <button
               disabled={search.page === search.totalPages || search.loading}
-              onClick={() => search.loadHotels(search.page + 1)}
+              onClick={() => runSearch(search.page + 1)}
               className="rounded-lg border px-4 py-2 disabled:opacity-40"
             >
               Next
