@@ -18,31 +18,39 @@ public class DashboardController : ApiControllerBase
 
     [HttpGet("admin")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAdminDashboard()
+    public async Task<IActionResult> GetAdminDashboard(
+        CancellationToken cancellationToken)
     {
-        var dashboard = await _dashboardService.GetAdminDashboardAsync();
+        var dashboard = await _dashboardService.GetAdminDashboardAsync(
+            cancellationToken);
         return Ok(dashboard);
     }
 
     [HttpGet("manager")]
     [Authorize(Roles = "HotelManager")]
-    public async Task<IActionResult> GetManagerDashboard()
+    public async Task<IActionResult> GetManagerDashboard(
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
 
-        var dashboard = await _dashboardService.GetManagerDashboardAsync(userId);
+        var dashboard = await _dashboardService.GetManagerDashboardAsync(
+            userId,
+            cancellationToken);
         return Ok(dashboard);
     }
 
     [HttpGet("customer")]
     [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> GetCustomerDashboard()
+    public async Task<IActionResult> GetCustomerDashboard(
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
 
-        var dashboard = await _dashboardService.GetCustomerDashboardAsync(userId);
+        var dashboard = await _dashboardService.GetCustomerDashboardAsync(
+            userId,
+            cancellationToken);
         return Ok(dashboard);
     }
 }

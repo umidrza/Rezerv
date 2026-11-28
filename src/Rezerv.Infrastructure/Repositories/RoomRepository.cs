@@ -15,21 +15,26 @@ public class RoomRepository : IRoomRepository
         _context = context;
     }
 
-    public async Task<Room?> GetByIdAsync(Guid id)
+    public async Task<Room?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Rooms
             .Include(r => r.RoomType)
                 .ThenInclude(rt => rt.Hotel)
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 
     public async Task<bool> IsRoomAvailableAsync(
         Guid roomId,
         DateTime checkIn,
-        DateTime checkOut)
+        DateTime checkOut,
+        CancellationToken cancellationToken = default)
     {
         var room = await _context.Rooms
-            .AnyAsync(r => r.Id == roomId && r.IsActive);
+            .AnyAsync(
+                r => r.Id == roomId && r.IsActive,
+                cancellationToken);
 
         if (!room)
             return false;
@@ -40,7 +45,8 @@ public class RoomRepository : IRoomRepository
                 (b.Status == BookingStatus.Submitted ||
                  b.Status == BookingStatus.Approved) &&
                 b.CheckIn < checkOut &&
-                b.CheckOut > checkIn);
+                b.CheckOut > checkIn,
+                cancellationToken);
 
         return !hasBlockingBooking;
     }

@@ -38,7 +38,8 @@ public class LocalFileStorageService : IFileStorageService
     public async Task<string> SaveImageAsync(
         Stream fileStream,
         string fileName,
-        string contentType)
+        string contentType,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(fileStream);
 
@@ -55,7 +56,10 @@ public class LocalFileStorageService : IFileStorageService
         }
 
         await using var imageContent = new MemoryStream();
-        await CopyWithinLimitAsync(fileStream, imageContent);
+        await CopyWithinLimitAsync(
+            fileStream,
+            imageContent,
+            cancellationToken);
 
         if (imageContent.Length == 0)
             throw new ArgumentException("Image file cannot be empty.");
@@ -113,7 +117,7 @@ public class LocalFileStorageService : IFileStorageService
                 FileOptions.Asynchronous);
 
             imageContent.Position = 0;
-            await imageContent.CopyToAsync(outputStream);
+            await imageContent.CopyToAsync(outputStream, cancellationToken);
         }
         catch
         {
@@ -124,8 +128,12 @@ public class LocalFileStorageService : IFileStorageService
         return $"/uploads/hotels/{uniqueFileName}";
     }
 
-    public Task DeleteImageAsync(string imageUrl)
+    public Task DeleteImageAsync(
+        string imageUrl,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var fileName = Path.GetFileName(imageUrl);
 
         if (string.IsNullOrWhiteSpace(fileName))
@@ -139,17 +147,22 @@ public class LocalFileStorageService : IFileStorageService
 
     private static async Task CopyWithinLimitAsync(
         Stream source,
-        Stream destination)
+        Stream destination,
+        CancellationToken cancellationToken)
     {
         var buffer = new byte[CopyBufferSize];
         int bytesRead;
 
-        while ((bytesRead = await source.ReadAsync(buffer.AsMemory())) > 0)
+        while ((bytesRead = await source.ReadAsync(
+            buffer.AsMemory(),
+            cancellationToken)) > 0)
         {
             if (destination.Length + bytesRead > ImageUploadLimits.MaxFileSizeBytes)
                 throw new ArgumentException("Image size cannot exceed 5 MB.");
 
-            await destination.WriteAsync(buffer.AsMemory(0, bytesRead));
+            await destination.WriteAsync(
+                buffer.AsMemory(0, bytesRead),
+                cancellationToken);
         }
     }
 

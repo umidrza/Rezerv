@@ -14,18 +14,22 @@ public class UserRepository : IUserRepository
         _userManager = userManager;
     }
 
-    public Task<int> CountAsync()
+    public Task<int> CountAsync(CancellationToken cancellationToken = default)
     {
-        return _userManager.Users.CountAsync();
+        return _userManager.Users.CountAsync(cancellationToken);
     }
 
     public async Task<Dictionary<Guid, string>> GetFullNamesByIdsAsync(
-    IEnumerable<Guid> userIds)
+        IEnumerable<Guid> userIds,
+        CancellationToken cancellationToken = default)
     {
         var ids = userIds.Distinct().ToList();
 
         return await _userManager.Users
             .Where(user => ids.Contains(user.Id))
-            .ToDictionaryAsync(user => user.Id, user => user.FullName);
+            .ToDictionaryAsync(
+                user => user.Id,
+                user => user.FullName,
+                cancellationToken);
     }
 }

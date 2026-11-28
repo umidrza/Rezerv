@@ -1,5 +1,6 @@
 using Rezerv.Application.DTOs.RoomType;
 using Rezerv.Application.Interfaces;
+using Rezerv.Application.Security;
 using Rezerv.Domain.Entities;
 
 namespace Rezerv.Application.Services;
@@ -23,17 +24,15 @@ public class RoomTypeService : IRoomTypeService
     public async Task<RoomTypeDto> CreateRoomTypeAsync(
         CreateRoomTypeDto dto,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        if (!isAdmin)
-        {
-            var isAssigned = await _hotelManagerRepository
-                .IsManagerAssignedAsync(userId, dto.HotelId);
-
-            if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You are not assigned to this hotel.");
-        }
+        await HotelManagerAuthorization.EnsureCanManageHotelAsync(
+            _hotelManagerRepository,
+            userId,
+            dto.HotelId,
+            isAdmin,
+            cancellationToken);
         
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new ArgumentException("Room type name is required.");
@@ -44,7 +43,9 @@ public class RoomTypeService : IRoomTypeService
         if (dto.PricePerNight <= 0)
             throw new ArgumentException("Price must be greater than zero.");
 
-        var hotel = await _hotelRepository.GetByIdAsync(dto.HotelId);
+        var hotel = await _hotelRepository.GetByIdAsync(
+            dto.HotelId,
+            cancellationToken);
 
         if (hotel == null)
             throw new ArgumentException("Hotel not found.");
@@ -59,21 +60,29 @@ public class RoomTypeService : IRoomTypeService
             PricePerNight = dto.PricePerNight
         };
 
-        await _roomTypeRepository.AddAsync(roomType);
+        await _roomTypeRepository.AddAsync(roomType, cancellationToken);
 
         return MapToDto(roomType);
     }
 
-    public async Task<RoomTypeDto?> GetRoomTypeAsync(Guid id)
+    public async Task<RoomTypeDto?> GetRoomTypeAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
-        var roomType = await _roomTypeRepository.GetByIdAsync(id);
+        var roomType = await _roomTypeRepository.GetByIdAsync(
+            id,
+            cancellationToken);
 
         return roomType == null ? null : MapToDto(roomType);
     }
 
-    public async Task<List<RoomTypeDto>> GetRoomTypesByHotelAsync(Guid hotelId)
+    public async Task<List<RoomTypeDto>> GetRoomTypesByHotelAsync(
+        Guid hotelId,
+        CancellationToken cancellationToken = default)
     {
-        var roomTypes = await _roomTypeRepository.GetByHotelIdAsync(hotelId);
+        var roomTypes = await _roomTypeRepository.GetByHotelIdAsync(
+            hotelId,
+            cancellationToken);
 
         return roomTypes.Select(MapToDto).ToList();
     }

@@ -21,32 +21,43 @@ public class HotelReviewRepository : IHotelReviewRepository
         _userManager = userManager;
     }
 
-    public async Task<HotelReview?> GetByIdAsync(Guid id)
+    public async Task<HotelReview?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         return await _context.HotelReviews
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 
-    public async Task<List<HotelReview>> GetByHotelIdAsync(Guid hotelId)
+    public async Task<List<HotelReview>> GetByHotelIdAsync(
+        Guid hotelId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.HotelReviews
             .Where(r => r.HotelId == hotelId)
             .OrderByDescending(r => r.CreatedAt)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<bool> ExistsAsync(Guid hotelId, Guid userId)
+    public async Task<bool> ExistsAsync(
+        Guid hotelId,
+        Guid userId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.HotelReviews
-            .AnyAsync(r => r.HotelId == hotelId && r.UserId == userId);
+            .AnyAsync(
+                r => r.HotelId == hotelId && r.UserId == userId,
+                cancellationToken);
     }
 
-    public async Task AddAsync(HotelReview review)
+    public async Task AddAsync(
+        HotelReview review,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            await _context.HotelReviews.AddAsync(review);
-            await _context.SaveChangesAsync();
+            await _context.HotelReviews.AddAsync(review, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateException ex)
             when (ex.GetBaseException() is PostgresException postgresException &&
@@ -59,24 +70,30 @@ public class HotelReviewRepository : IHotelReviewRepository
         }
     }
 
-    public async Task<double> GetAverageRatingAsync(Guid hotelId)
+    public async Task<double> GetAverageRatingAsync(
+        Guid hotelId,
+        CancellationToken cancellationToken = default)
     {
         var average = await _context.HotelReviews
             .Where(r => r.HotelId == hotelId)
             .Select(r => (double?)r.Rating)
-            .AverageAsync();
+            .AverageAsync(cancellationToken);
 
         return average ?? 0;
     }
 
-    public async Task<int> GetReviewCountAsync(Guid hotelId)
+    public async Task<int> GetReviewCountAsync(
+        Guid hotelId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.HotelReviews
-            .CountAsync(r => r.HotelId == hotelId);
+            .CountAsync(r => r.HotelId == hotelId, cancellationToken);
     }
 
     public async Task<Dictionary<Guid, (double AverageRating, int ReviewCount)>>
-    GetRatingsByHotelIdsAsync(IEnumerable<Guid> hotelIds)
+    GetRatingsByHotelIdsAsync(
+        IEnumerable<Guid> hotelIds,
+        CancellationToken cancellationToken = default)
     {
         var ids = hotelIds.Distinct().ToList();
 
@@ -91,6 +108,7 @@ public class HotelReviewRepository : IHotelReviewRepository
             })
             .ToDictionaryAsync(
                 x => x.HotelId,
-                x => (x.AverageRating, x.ReviewCount));
+                x => (x.AverageRating, x.ReviewCount),
+                cancellationToken);
     }
 }

@@ -13,16 +13,25 @@ public class UserRoleService : IUserRoleService
         _userManager = userManager;
     }
 
-    public async Task AssignRoleAsync(Guid userId, string role)
+    public async Task AssignRoleAsync(
+        Guid userId,
+        string role,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var user = await _userManager.FindByIdAsync(userId.ToString());
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (user == null)
             throw new ArgumentException("User not found.");
 
-        if (!await _userManager.IsInRoleAsync(user, role))
+        var alreadyInRole = await _userManager.IsInRoleAsync(user, role);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!alreadyInRole)
         {
             var result = await _userManager.AddToRoleAsync(user, role);
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (!result.Succeeded)
             {

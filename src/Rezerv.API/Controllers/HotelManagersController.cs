@@ -18,11 +18,15 @@ public class HotelManagersController : ControllerBase
     }
 
     [HttpPost("assign")]
-    public async Task<IActionResult> AssignManager(AssignHotelManagerDto dto)
+    public async Task<IActionResult> AssignManager(
+        AssignHotelManagerDto dto,
+        CancellationToken cancellationToken)
     {
         try
         {
-            await _hotelManagerService.AssignManagerAsync(dto);
+            await _hotelManagerService.AssignManagerAsync(
+                dto,
+                cancellationToken);
 
             return Ok(new { message = "Manager assigned successfully." });
         }

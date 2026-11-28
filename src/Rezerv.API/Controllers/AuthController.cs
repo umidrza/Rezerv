@@ -27,11 +27,13 @@ public class AuthController : ControllerBase
 
     [HttpPost("register")]
     [EnableRateLimiting("Auth")]
-    public async Task<IActionResult> Register(RegisterDto dto)
+    public async Task<IActionResult> Register(
+        RegisterDto dto,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var result = await _authService.RegisterAsync(dto);
+            var result = await _authService.RegisterAsync(dto, cancellationToken);
             SetAuthCookie(result.Token);
             return Ok(result.User);
         }
@@ -44,11 +46,13 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [EnableRateLimiting("Auth")]
-    public async Task<IActionResult> Login(LoginDto dto)
+    public async Task<IActionResult> Login(
+        LoginDto dto,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var result = await _authService.LoginAsync(dto);
+            var result = await _authService.LoginAsync(dto, cancellationToken);
             SetAuthCookie(result.Token);
             return Ok(result.User);
         }
@@ -60,13 +64,16 @@ public class AuthController : ControllerBase
 
     [HttpGet("me")]
     [Authorize]
-    public async Task<IActionResult> GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser(
+        CancellationToken cancellationToken)
     {
         var userIdValue = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
         if (!Guid.TryParse(userIdValue, out var userId))
             return Unauthorized();
 
-        var user = await _authService.GetCurrentUserAsync(userId);
+        var user = await _authService.GetCurrentUserAsync(
+            userId,
+            cancellationToken);
         return user is null ? Unauthorized() : Ok(user);
     }
 

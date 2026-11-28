@@ -14,29 +14,37 @@ public class RoomManagementRepository : IRoomManagementRepository
         _context = context;
     }
 
-    public async Task<Room?> GetByIdAsync(Guid id)
+    public async Task<Room?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Rooms
             .Include(r => r.RoomType)
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 
-    public async Task<List<Room>> GetByRoomTypeIdAsync(Guid roomTypeId)
+    public async Task<List<Room>> GetByRoomTypeIdAsync(
+        Guid roomTypeId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Rooms
             .Where(r => r.RoomTypeId == roomTypeId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task AddAsync(Room room)
+    public async Task AddAsync(
+        Room room,
+        CancellationToken cancellationToken = default)
     {
-        await _context.Rooms.AddAsync(room);
-        await _context.SaveChangesAsync();
+        await _context.Rooms.AddAsync(room, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task UpdateAsync(Room room)
+    public async Task UpdateAsync(
+        Room room,
+        CancellationToken cancellationToken = default)
     {
         _context.Rooms.Update(room);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

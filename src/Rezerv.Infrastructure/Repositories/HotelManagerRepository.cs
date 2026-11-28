@@ -14,23 +14,32 @@ public class HotelManagerRepository : IHotelManagerRepository
         _context = context;
     }
 
-    public async Task<bool> IsManagerAssignedAsync(Guid userId, Guid hotelId)
+    public async Task<bool> IsManagerAssignedAsync(
+        Guid userId,
+        Guid hotelId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.HotelManagers
-            .AnyAsync(hm => hm.UserId == userId && hm.HotelId == hotelId);
+            .AnyAsync(
+                hm => hm.UserId == userId && hm.HotelId == hotelId,
+                cancellationToken);
     }
 
-    public async Task AddAsync(HotelManager hotelManager)
+    public async Task AddAsync(
+        HotelManager hotelManager,
+        CancellationToken cancellationToken = default)
     {
-        await _context.HotelManagers.AddAsync(hotelManager);
-        await _context.SaveChangesAsync();
+        await _context.HotelManagers.AddAsync(hotelManager, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<List<HotelManager>> GetByUserIdAsync(Guid userId)
+    public async Task<List<HotelManager>> GetByUserIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.HotelManagers
             .Include(hm => hm.Hotel)
             .Where(hm => hm.UserId == userId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 }

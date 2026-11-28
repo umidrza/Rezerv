@@ -24,7 +24,8 @@ public class HotelImagesController : ApiControllerBase
     [RequestFormLimits(
         MultipartBodyLengthLimit = ImageUploadLimits.MaxMultipartRequestSizeBytes)]
     public async Task<IActionResult> AddImage(
-        [FromForm] CreateHotelImageDto dto)
+        [FromForm] CreateHotelImageDto dto,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -34,7 +35,10 @@ public class HotelImagesController : ApiControllerBase
             var isAdmin = User.IsInRole("Admin");
 
             var result = await _hotelImageService.AddImageAsync(
-                dto, userId, isAdmin);
+                dto,
+                userId,
+                isAdmin,
+                cancellationToken);
 
             return Ok(result);
         }
@@ -49,9 +53,13 @@ public class HotelImagesController : ApiControllerBase
     }
 
     [HttpGet("hotel/{hotelId:guid}")]
-    public async Task<IActionResult> GetHotelImages(Guid hotelId)
+    public async Task<IActionResult> GetHotelImages(
+        Guid hotelId,
+        CancellationToken cancellationToken)
     {
-        var images = await _hotelImageService.GetHotelImagesAsync(hotelId);
+        var images = await _hotelImageService.GetHotelImagesAsync(
+            hotelId,
+            cancellationToken);
         return Ok(images);
     }
 
@@ -59,7 +67,8 @@ public class HotelImagesController : ApiControllerBase
     [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> SetPrimaryImage(
         Guid hotelId,
-        Guid imageId)
+        Guid imageId,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -69,7 +78,11 @@ public class HotelImagesController : ApiControllerBase
             var isAdmin = User.IsInRole("Admin");
 
             await _hotelImageService.SetPrimaryImageAsync(
-                hotelId, imageId, userId, isAdmin);
+                hotelId,
+                imageId,
+                userId,
+                isAdmin,
+                cancellationToken);
 
             return NoContent();
         }
@@ -87,7 +100,8 @@ public class HotelImagesController : ApiControllerBase
     [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> DeleteImage(
         Guid hotelId,
-        Guid imageId)
+        Guid imageId,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -97,7 +111,11 @@ public class HotelImagesController : ApiControllerBase
             var isAdmin = User.IsInRole("Admin");
 
             await _hotelImageService.DeleteImageAsync(
-                hotelId, imageId, userId, isAdmin);
+                hotelId,
+                imageId,
+                userId,
+                isAdmin,
+                cancellationToken);
 
             return NoContent();
         }

@@ -4,5 +4,7 @@ namespace Rezerv.Application.Interfaces;
 
 public interface IHotelManagerService
 {
-    Task AssignManagerAsync(AssignHotelManagerDto dto);
+    Task AssignManagerAsync(
+        AssignHotelManagerDto dto,
+        CancellationToken cancellationToken = default);
 }

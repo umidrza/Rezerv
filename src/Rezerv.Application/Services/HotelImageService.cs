@@ -1,5 +1,6 @@
 using Rezerv.Application.DTOs.Hotel;
 using Rezerv.Application.Interfaces;
+using Rezerv.Application.Security;
 using Rezerv.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -30,9 +31,14 @@ public class HotelImageService : IHotelImageService
     public async Task<HotelImageDto> AddImageAsync(
         CreateHotelImageDto dto,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var hotel = await GetAuthorizedHotelAsync(dto.HotelId, userId, isAdmin);
+        var hotel = await GetAuthorizedHotelAsync(
+            dto.HotelId,
+            userId,
+            isAdmin,
+            cancellationToken);
 
         if (dto.File == null || dto.File.Length == 0)
             throw new ArgumentException("Image file is required.");
@@ -42,7 +48,8 @@ public class HotelImageService : IHotelImageService
         var imageUrl = await _fileStorageService.SaveImageAsync(
             fileStream,
             dto.File.FileName,
-            dto.File.ContentType);
+            dto.File.ContentType,
+            cancellationToken);
 
         var image = new HotelImage
         {
@@ -56,13 +63,16 @@ public class HotelImageService : IHotelImageService
             await _hotelImageRepository.AddWithHotelAsync(
                 image,
                 hotel,
-                setAsPrimary: hotel.PrimaryImageId is null);
+                setAsPrimary: hotel.PrimaryImageId is null,
+                cancellationToken);
         }
         catch
         {
             try
             {
-                await _fileStorageService.DeleteImageAsync(imageUrl);
+                await _fileStorageService.DeleteImageAsync(
+                    imageUrl,
+                    CancellationToken.None);
             }
             catch (Exception cleanupException)
             {
@@ -78,9 +88,13 @@ public class HotelImageService : IHotelImageService
         return MapToDto(image);
     }
 
-    public async Task<List<HotelImageDto>> GetHotelImagesAsync(Guid hotelId)
+    public async Task<List<HotelImageDto>> GetHotelImagesAsync(
+        Guid hotelId,
+        CancellationToken cancellationToken = default)
     {
-        var images = await _hotelImageRepository.GetByHotelIdAsync(hotelId);
+        var images = await _hotelImageRepository.GetByHotelIdAsync(
+            hotelId,
+            cancellationToken);
 
         return images.Select(MapToDto).ToList();
     }
@@ -89,38 +103,57 @@ public class HotelImageService : IHotelImageService
         Guid hotelId,
         Guid imageId,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var hotel = await GetAuthorizedHotelAsync(hotelId, userId, isAdmin);
+        var hotel = await GetAuthorizedHotelAsync(
+            hotelId,
+            userId,
+            isAdmin,
+            cancellationToken);
 
-        var image = await _hotelImageRepository.GetByIdAsync(imageId);
+        var image = await _hotelImageRepository.GetByIdAsync(
+            imageId,
+            cancellationToken);
 
         if (image == null || image.HotelId != hotelId)
             throw new ArgumentException("Image not found.");
 
         hotel.PrimaryImageId = image.Id;
 
-        await _hotelRepository.UpdateAsync(hotel);
+        await _hotelRepository.UpdateAsync(hotel, cancellationToken);
     }
 
     public async Task DeleteImageAsync(
         Guid hotelId,
         Guid imageId,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var hotel = await GetAuthorizedHotelAsync(hotelId, userId, isAdmin);
+        var hotel = await GetAuthorizedHotelAsync(
+            hotelId,
+            userId,
+            isAdmin,
+            cancellationToken);
 
-        var image = await _hotelImageRepository.GetByIdAsync(imageId);
+        var image = await _hotelImageRepository.GetByIdAsync(
+            imageId,
+            cancellationToken);
 
         if (image == null || image.HotelId != hotelId)
             throw new ArgumentException("Image not found.");
 
-        await _hotelImageRepository.DeleteWithHotelAsync(image, hotel);
+        await _hotelImageRepository.DeleteWithHotelAsync(
+            image,
+            hotel,
+            cancellationToken);
 
         try
         {
-            await _fileStorageService.DeleteImageAsync(image.ImageUrl);
+            await _fileStorageService.DeleteImageAsync(
+                image.ImageUrl,
+                CancellationToken.None);
         }
         catch (Exception cleanupException)
         {
@@ -134,22 +167,22 @@ public class HotelImageService : IHotelImageService
     private async Task<Hotel> GetAuthorizedHotelAsync(
         Guid hotelId,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken)
     {
-        var hotel = await _hotelRepository.GetByIdAsync(hotelId);
+        var hotel = await _hotelRepository.GetByIdAsync(
+            hotelId,
+            cancellationToken);
 
         if (hotel == null)
             throw new ArgumentException("Hotel not found.");
 
-        if (!isAdmin)
-        {
-            var isAssigned = await _hotelManagerRepository
-                .IsManagerAssignedAsync(userId, hotelId);
-
-            if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You are not assigned to this hotel.");
-        }
+        await HotelManagerAuthorization.EnsureCanManageHotelAsync(
+            _hotelManagerRepository,
+            userId,
+            hotelId,
+            isAdmin,
+            cancellationToken);
 
         return hotel;
     }

@@ -20,15 +20,22 @@ public class HotelManagerService : IHotelManagerService
         _userRoleService = userRoleService;
     }
 
-    public async Task AssignManagerAsync(AssignHotelManagerDto dto)
+    public async Task AssignManagerAsync(
+        AssignHotelManagerDto dto,
+        CancellationToken cancellationToken = default)
     {
-        var hotel = await _hotelRepository.GetByIdAsync(dto.HotelId);
+        var hotel = await _hotelRepository.GetByIdAsync(
+            dto.HotelId,
+            cancellationToken);
 
         if (hotel == null)
             throw new ArgumentException("Hotel not found.");
 
         var alreadyAssigned = await _hotelManagerRepository
-            .IsManagerAssignedAsync(dto.UserId, dto.HotelId);
+            .IsManagerAssignedAsync(
+                dto.UserId,
+                dto.HotelId,
+                cancellationToken);
 
         if (alreadyAssigned)
             throw new ArgumentException("Manager is already assigned to this hotel.");
@@ -40,8 +47,13 @@ public class HotelManagerService : IHotelManagerService
             HotelId = dto.HotelId
         };
 
-        await _hotelManagerRepository.AddAsync(hotelManager);
+        await _hotelManagerRepository.AddAsync(
+            hotelManager,
+            cancellationToken);
 
-        await _userRoleService.AssignRoleAsync(dto.UserId, "HotelManager");
+        await _userRoleService.AssignRoleAsync(
+            dto.UserId,
+            "HotelManager",
+            cancellationToken);
     }
 }

@@ -14,33 +14,43 @@ public class HotelFavoriteRepository : IHotelFavoriteRepository
         _context = context;
     }
 
-    public async Task<List<HotelFavorite>> GetByUserIdAsync(Guid userId)
+    public async Task<List<HotelFavorite>> GetByUserIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.HotelFavorites
             .Where(f => f.UserId == userId)
             .Include(f => f.Hotel)
                 .ThenInclude(h => h.PrimaryImage)
             .OrderByDescending(f => f.CreatedAt)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<HotelFavorite?> GetAsync(Guid userId, Guid hotelId)
+    public async Task<HotelFavorite?> GetAsync(
+        Guid userId,
+        Guid hotelId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.HotelFavorites
             .FirstOrDefaultAsync(f =>
                 f.UserId == userId &&
-                f.HotelId == hotelId);
+                f.HotelId == hotelId,
+                cancellationToken);
     }
 
-    public async Task AddAsync(HotelFavorite favorite)
+    public async Task AddAsync(
+        HotelFavorite favorite,
+        CancellationToken cancellationToken = default)
     {
-        await _context.HotelFavorites.AddAsync(favorite);
-        await _context.SaveChangesAsync();
+        await _context.HotelFavorites.AddAsync(favorite, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteAsync(HotelFavorite favorite)
+    public async Task DeleteAsync(
+        HotelFavorite favorite,
+        CancellationToken cancellationToken = default)
     {
         _context.HotelFavorites.Remove(favorite);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

@@ -19,11 +19,15 @@ public class HotelsController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> CreateHotel(CreateHotelDto dto)
+    public async Task<IActionResult> CreateHotel(
+        CreateHotelDto dto,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var hotel = await _hotelService.CreateHotelAsync(dto);
+            var hotel = await _hotelService.CreateHotelAsync(
+                dto,
+                cancellationToken);
             return CreatedAtAction(nameof(GetHotel), new { id = hotel.Id }, hotel);
         }
         catch (ArgumentException ex)
@@ -33,16 +37,19 @@ public class HotelsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllHotels()
+    public async Task<IActionResult> GetAllHotels(
+        CancellationToken cancellationToken)
     {
-        var hotels = await _hotelService.GetAllHotelsAsync();
+        var hotels = await _hotelService.GetAllHotelsAsync(cancellationToken);
         return Ok(hotels);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetHotel(Guid id)
+    public async Task<IActionResult> GetHotel(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var hotel = await _hotelService.GetHotelAsync(id);
+        var hotel = await _hotelService.GetHotelAsync(id, cancellationToken);
 
         if (hotel == null)
             return NotFound();
@@ -52,11 +59,14 @@ public class HotelsController : ControllerBase
 
     [HttpGet("search")]
     public async Task<IActionResult> SearchHotels(
-        [FromQuery] SearchHotelsDto dto)
+        [FromQuery] SearchHotelsDto dto,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var hotels = await _hotelService.SearchHotelsAsync(dto);
+            var hotels = await _hotelService.SearchHotelsAsync(
+                dto,
+                cancellationToken);
 
             return Ok(hotels);
         }
@@ -68,7 +78,8 @@ public class HotelsController : ControllerBase
 
     [HttpGet("my-hotels")]
     [Authorize(Roles = "Admin,HotelManager")]
-    public async Task<IActionResult> GetMyHotels()
+    public async Task<IActionResult> GetMyHotels(
+        CancellationToken cancellationToken)
     {
         var userIdValue = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 
@@ -77,7 +88,10 @@ public class HotelsController : ControllerBase
 
         var isAdmin = User.IsInRole("Admin");
 
-        var hotels = await _hotelService.GetMyHotelsAsync(userId, isAdmin);
+        var hotels = await _hotelService.GetMyHotelsAsync(
+            userId,
+            isAdmin,
+            cancellationToken);
 
         return Ok(hotels);
     }
@@ -87,7 +101,8 @@ public class HotelsController : ControllerBase
     [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> UpdateHotel(
         Guid id,
-        UpdateHotelDto dto)
+        UpdateHotelDto dto,
+        CancellationToken cancellationToken)
     {
         var userIdValue = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 
@@ -102,7 +117,8 @@ public class HotelsController : ControllerBase
                 id,
                 dto,
                 userId,
-                isAdmin);
+                isAdmin,
+                cancellationToken);
 
             return Ok(hotel);
         }
@@ -123,21 +139,26 @@ public class HotelsController : ControllerBase
 
     [HttpPut("{id:guid}/activate")]
     [Authorize(Roles = "Admin,HotelManager")]
-    public async Task<IActionResult> ActivateHotel(Guid id)
+    public async Task<IActionResult> ActivateHotel(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        return await ChangeHotelStatus(id, true);
+        return await ChangeHotelStatus(id, true, cancellationToken);
     }
 
     [HttpPut("{id:guid}/deactivate")]
     [Authorize(Roles = "Admin,HotelManager")]
-    public async Task<IActionResult> DeactivateHotel(Guid id)
+    public async Task<IActionResult> DeactivateHotel(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        return await ChangeHotelStatus(id, false);
+        return await ChangeHotelStatus(id, false, cancellationToken);
     }
 
     private async Task<IActionResult> ChangeHotelStatus(
         Guid id,
-        bool isActive)
+        bool isActive,
+        CancellationToken cancellationToken)
     {
         var userIdValue = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 
@@ -149,7 +170,11 @@ public class HotelsController : ControllerBase
         try
         {
             await _hotelService.SetHotelStatusAsync(
-                id, isActive, userId, isAdmin);
+                id,
+                isActive,
+                userId,
+                isAdmin,
+                cancellationToken);
 
             return NoContent();
         }

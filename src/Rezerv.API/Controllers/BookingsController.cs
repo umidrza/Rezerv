@@ -18,14 +18,17 @@ public class BookingsController : ApiControllerBase
 
     [Authorize(Roles = "Customer")]
     [HttpPost]
-    public async Task<IActionResult> CreateBooking(CreateBookingDto dto)
+    public async Task<IActionResult> CreateBooking(
+        CreateBookingDto dto,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
 
         var booking = await _bookingService.CreateBookingAsync(
             dto,
-            userId);
+            userId,
+            cancellationToken);
 
         return CreatedAtAction(
             nameof(GetBooking),
@@ -35,7 +38,9 @@ public class BookingsController : ApiControllerBase
 
     [Authorize]
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetBooking(Guid id)
+    public async Task<IActionResult> GetBooking(
+        Guid id,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -43,7 +48,8 @@ public class BookingsController : ApiControllerBase
         var booking = await _bookingService.GetBookingForUserAsync(
             id,
             userId,
-            User.IsInRole("Admin"));
+            User.IsInRole("Admin"),
+            cancellationToken);
 
         if (booking == null)
             return NotFound();
@@ -53,31 +59,38 @@ public class BookingsController : ApiControllerBase
 
     [HttpGet("check-availability")]
     public async Task<IActionResult> CheckRoomAvailability(
-        [FromQuery] CheckRoomAvailabilityDto request)
+        [FromQuery] CheckRoomAvailabilityDto request,
+        CancellationToken cancellationToken)
     {
         var isAvailable = await _bookingService.CheckRoomAvailabilityAsync(
             request.RoomId,
             request.CheckIn,
-            request.CheckOut);
+            request.CheckOut,
+            cancellationToken);
 
         return Ok(new { isAvailable });
     }
 
     [Authorize(Roles = "Customer")]
     [HttpGet("my-bookings")]
-    public async Task<IActionResult> GetMyBookings()
+    public async Task<IActionResult> GetMyBookings(
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
 
-        var bookings = await _bookingService.GetMyBookingsAsync(userId);
+        var bookings = await _bookingService.GetMyBookingsAsync(
+            userId,
+            cancellationToken);
 
         return Ok(bookings);
     }
 
     [Authorize(Roles = "Admin,HotelManager")]
     [HttpGet("hotel/{hotelId:guid}")]
-    public async Task<IActionResult> GetHotelBookings(Guid hotelId)
+    public async Task<IActionResult> GetHotelBookings(
+        Guid hotelId,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -87,14 +100,17 @@ public class BookingsController : ApiControllerBase
         var bookings = await _bookingService.GetHotelBookingsAsync(
             hotelId,
             userId,
-            isAdmin);
+            isAdmin,
+            cancellationToken);
 
         return Ok(bookings);
     }
 
     [Authorize(Roles = "Admin,HotelManager")]
     [HttpPut("{id:guid}/approve")]
-    public async Task<IActionResult> ApproveBooking(Guid id)
+    public async Task<IActionResult> ApproveBooking(
+        Guid id,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -102,7 +118,8 @@ public class BookingsController : ApiControllerBase
         var result = await _bookingService.ApproveBookingAsync(
             id,
             userId,
-            User.IsInRole("Admin"));
+            User.IsInRole("Admin"),
+            cancellationToken);
 
         if (!result)
             return BadRequest(new { message = "Booking could not be approved." });
@@ -112,7 +129,9 @@ public class BookingsController : ApiControllerBase
 
     [Authorize(Roles = "Admin,HotelManager")]
     [HttpPut("{id:guid}/reject")]
-    public async Task<IActionResult> RejectBooking(Guid id)
+    public async Task<IActionResult> RejectBooking(
+        Guid id,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -120,7 +139,8 @@ public class BookingsController : ApiControllerBase
         var result = await _bookingService.RejectBookingAsync(
             id,
             userId,
-            User.IsInRole("Admin"));
+            User.IsInRole("Admin"),
+            cancellationToken);
 
         if (!result)
             return BadRequest(new { message = "Booking could not be rejected." });
@@ -130,12 +150,17 @@ public class BookingsController : ApiControllerBase
 
     [Authorize(Roles = "Customer")]
     [HttpPut("{id:guid}/cancel")]
-    public async Task<IActionResult> CancelBooking(Guid id)
+    public async Task<IActionResult> CancelBooking(
+        Guid id,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
 
-        await _bookingService.CancelBookingAsync(id, userId);
+        await _bookingService.CancelBookingAsync(
+            id,
+            userId,
+            cancellationToken);
         return NoContent();
     }
 }

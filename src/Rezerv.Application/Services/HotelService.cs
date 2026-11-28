@@ -2,6 +2,8 @@ using Rezerv.Application.DTOs.Hotel;
 using Rezerv.Application.Interfaces;
 using Rezerv.Domain.Entities;
 using Rezerv.Application.DTOs.Common;
+using Rezerv.Application.Mappings;
+using Rezerv.Application.Security;
 
 
 namespace Rezerv.Application.Services;
@@ -22,7 +24,9 @@ public class HotelService : IHotelService
         _reviewRepository = reviewRepository;
     }
 
-    public async Task<HotelDto> CreateHotelAsync(CreateHotelDto dto)
+    public async Task<HotelDto> CreateHotelAsync(
+        CreateHotelDto dto,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new ArgumentException("Hotel name is required.");
@@ -56,7 +60,7 @@ public class HotelService : IHotelService
             IsActive = true
         };
 
-        await _hotelRepository.AddAsync(hotel);
+        await _hotelRepository.AddAsync(hotel, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(dto.PrimaryImageUrl))
         {
@@ -67,41 +71,48 @@ public class HotelService : IHotelService
                 ImageUrl = dto.PrimaryImageUrl
             };
 
-            await _hotelImageRepository.AddAsync(image);
+            await _hotelImageRepository.AddAsync(image, cancellationToken);
 
             hotel.PrimaryImageId = image.Id;
             hotel.PrimaryImage = image;
 
-            await _hotelRepository.UpdateAsync(hotel);
+            await _hotelRepository.UpdateAsync(hotel, cancellationToken);
         }
 
-        return MapToDto(hotel);
+        return HotelDtoMapper.Map(hotel);
     }
 
-    public async Task<HotelDto?> GetHotelAsync(Guid id)
+    public async Task<HotelDto?> GetHotelAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
-        var hotel = await _hotelRepository.GetByIdAsync(id);
+        var hotel = await _hotelRepository.GetByIdAsync(id, cancellationToken);
 
         if (hotel == null)
             return null;
 
         var ratings = await _reviewRepository.GetRatingsByHotelIdsAsync(
-            new[] { hotel.Id });
+            new[] { hotel.Id },
+            cancellationToken);
 
-        return MapToDto(hotel, ratings);
+        return HotelDtoMapper.Map(hotel, ratings);
     }
 
-    public async Task<List<HotelDto>> GetAllHotelsAsync()
+    public async Task<List<HotelDto>> GetAllHotelsAsync(
+        CancellationToken cancellationToken = default)
     {
-        var hotels = await _hotelRepository.GetAllAsync();
+        var hotels = await _hotelRepository.GetAllAsync(cancellationToken);
 
         var ratings = await _reviewRepository.GetRatingsByHotelIdsAsync(
-            hotels.Select(h => h.Id));
+            hotels.Select(h => h.Id),
+            cancellationToken);
 
-        return hotels.Select(h => MapToDto(h, ratings)).ToList();
+        return hotels.Select(h => HotelDtoMapper.Map(h, ratings)).ToList();
     }
 
-    public async Task<PaginatedResultDto<HotelDto>> SearchHotelsAsync(SearchHotelsDto dto)
+    public async Task<PaginatedResultDto<HotelDto>> SearchHotelsAsync(
+        SearchHotelsDto dto,
+        CancellationToken cancellationToken = default)
     {
         // Validate search filters
         if (dto.StarRating.HasValue &&
@@ -163,14 +174,17 @@ public class HotelService : IHotelService
             dto.CheckOut = DateTime.SpecifyKind(dto.CheckOut!.Value, DateTimeKind.Utc);
         }
 
-        var hotels = await _hotelRepository.SearchAsync(dto);
-        var totalCount = await _hotelRepository.CountSearchResultsAsync(dto);
+        var hotels = await _hotelRepository.SearchAsync(dto, cancellationToken);
+        var totalCount = await _hotelRepository.CountSearchResultsAsync(
+            dto,
+            cancellationToken);
 
         var ratings = await _reviewRepository.GetRatingsByHotelIdsAsync(
-            hotels.Select(h => h.Id));
+            hotels.Select(h => h.Id),
+            cancellationToken);
 
         var items = hotels
-            .Select(hotel => MapToDto(hotel, ratings))
+            .Select(hotel => HotelDtoMapper.Map(hotel, ratings))
             .ToList();
 
         return new PaginatedResultDto<HotelDto>
@@ -183,32 +197,41 @@ public class HotelService : IHotelService
         };
     }
 
-    public async Task<List<HotelDto>> GetMyHotelsAsync(Guid userId, bool isAdmin)
+    public async Task<List<HotelDto>> GetMyHotelsAsync(
+        Guid userId,
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
         var hotels = isAdmin
-            ? await _hotelRepository.GetAllAsync()
-            : await _hotelRepository.GetByManagerIdAsync(userId);
+            ? await _hotelRepository.GetAllAsync(cancellationToken)
+            : await _hotelRepository.GetByManagerIdAsync(
+                userId,
+                cancellationToken);
 
         var ratings = await _reviewRepository.GetRatingsByHotelIdsAsync(
-            hotels.Select(h => h.Id));
+            hotels.Select(h => h.Id),
+            cancellationToken);
 
-        return hotels.Select(h => MapToDto(h, ratings)).ToList();
+        return hotels.Select(h => HotelDtoMapper.Map(h, ratings)).ToList();
     }
 
     public async Task<HotelDto> UpdateHotelAsync(
         Guid hotelId,
         UpdateHotelDto dto,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var hotel = await _hotelRepository.GetByIdAsync(hotelId);
+        var hotel = await _hotelRepository.GetByIdAsync(
+            hotelId,
+            cancellationToken);
 
         if (hotel == null)
             throw new KeyNotFoundException("Hotel not found.");
 
-        // Check permissions
-        if (!isAdmin && !hotel.HotelManagers.Any(hm => hm.UserId == userId))
-            throw new UnauthorizedAccessException("You cannot manage this hotel.");
+        HotelManagerAuthorization.EnsureCanManageHotel(
+            isAdmin,
+            hotel.HotelManagers.Any(hm => hm.UserId == userId));
 
         // Validate input
         if (string.IsNullOrWhiteSpace(dto.Name))
@@ -242,7 +265,8 @@ public class HotelService : IHotelService
                 hotel.PrimaryImage.ImageUrl = dto.PrimaryImageUrl;
 
                 await _hotelImageRepository.UpdateRangeAsync(
-                    new List<HotelImage> { hotel.PrimaryImage });
+                    new List<HotelImage> { hotel.PrimaryImage },
+                    cancellationToken);
             }
             else
             {
@@ -253,16 +277,16 @@ public class HotelService : IHotelService
                     ImageUrl = dto.PrimaryImageUrl
                 };
 
-                await _hotelImageRepository.AddAsync(image);
+                await _hotelImageRepository.AddAsync(image, cancellationToken);
 
                 hotel.PrimaryImageId = image.Id;
                 hotel.PrimaryImage = image;
             }
         }
 
-        await _hotelRepository.UpdateAsync(hotel);
+        await _hotelRepository.UpdateAsync(hotel, cancellationToken);
 
-        return MapToDto(hotel);
+        return HotelDtoMapper.Map(hotel);
     }
 
 
@@ -270,43 +294,23 @@ public class HotelService : IHotelService
         Guid hotelId,
         bool isActive,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var hotel = await _hotelRepository.GetByIdAsync(hotelId);
+        var hotel = await _hotelRepository.GetByIdAsync(
+            hotelId,
+            cancellationToken);
 
         if (hotel == null)
             throw new KeyNotFoundException("Hotel not found.");
 
-        if (!isAdmin && !hotel.HotelManagers.Any(hm => hm.UserId == userId))
-            throw new UnauthorizedAccessException(
-                "You cannot manage this hotel.");
+        HotelManagerAuthorization.EnsureCanManageHotel(
+            isAdmin,
+            hotel.HotelManagers.Any(hm => hm.UserId == userId));
 
         hotel.IsActive = isActive;
 
-        await _hotelRepository.UpdateAsync(hotel);
-    }
-
-    private static HotelDto MapToDto(
-        Hotel hotel,
-        Dictionary<Guid, (double AverageRating, int ReviewCount)>? ratings = null)
-    {
-        var rating = ratings?.GetValueOrDefault(hotel.Id);
-
-        return new HotelDto
-        {
-            Id = hotel.Id,
-            Name = hotel.Name,
-            Description = hotel.Description,
-            Address = hotel.Address,
-            City = hotel.City,
-            Country = hotel.Country,
-            StarRating = hotel.StarRating,
-            PrimaryImageId = hotel.PrimaryImageId,
-            PrimaryImageUrl = hotel.PrimaryImage?.ImageUrl,
-            IsActive = hotel.IsActive,
-            AverageRating = rating?.AverageRating ?? 0,
-            ReviewCount = rating?.ReviewCount ?? 0
-        };
+        await _hotelRepository.UpdateAsync(hotel, cancellationToken);
     }
 
 }

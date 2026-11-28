@@ -5,8 +5,11 @@ public interface IFileStorageService
     Task<string> SaveImageAsync(
         Stream fileStream,
         string fileName,
-        string contentType
+        string contentType,
+        CancellationToken cancellationToken = default
     );
 
-    Task DeleteImageAsync(string imageUrl);
+    Task DeleteImageAsync(
+        string imageUrl,
+        CancellationToken cancellationToken = default);
 }

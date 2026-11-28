@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Rezerv.Application.Interfaces;
+using Rezerv.Application.DTOs.Dashboard;
 using Rezerv.Domain.Entities;
 using Rezerv.Infrastructure.Data;
 using Rezerv.Application.DTOs.Hotel;
@@ -16,41 +17,50 @@ public class HotelRepository : IHotelRepository
         _context = context;
     }
 
-    public async Task<Hotel?> GetByIdAsync(Guid id)
+    public async Task<Hotel?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Hotels
             .Include(h => h.PrimaryImage)
             .Include(h => h.Images)
             .Include(h => h.HotelManagers)
-            .FirstOrDefaultAsync(h => h.Id == id);
+            .FirstOrDefaultAsync(h => h.Id == id, cancellationToken);
     }
 
-    public async Task<List<Hotel>> GetAllAsync()
+    public async Task<List<Hotel>> GetAllAsync(
+        CancellationToken cancellationToken = default)
     {
         return await _context.Hotels
             .Include(h => h.PrimaryImage)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task AddAsync(Hotel hotel)
+    public async Task AddAsync(
+        Hotel hotel,
+        CancellationToken cancellationToken = default)
     {
-        await _context.Hotels.AddAsync(hotel);
-        await _context.SaveChangesAsync();
+        await _context.Hotels.AddAsync(hotel, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task UpdateAsync(Hotel hotel)
+    public async Task UpdateAsync(
+        Hotel hotel,
+        CancellationToken cancellationToken = default)
     {
         _context.Hotels.Update(hotel);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<List<Hotel>> SearchAsync(SearchHotelsDto dto)
+    public async Task<List<Hotel>> SearchAsync(
+        SearchHotelsDto dto,
+        CancellationToken cancellationToken = default)
     {
         return await ApplySorting(BuildSearchQuery(dto), dto)
             .Include(h => h.PrimaryImage)
             .Skip((dto.Page - 1) * dto.PageSize)
             .Take(dto.PageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
     private IQueryable<Hotel> BuildSearchQuery(SearchHotelsDto dto)
@@ -133,43 +143,83 @@ public class HotelRepository : IHotelRepository
         };
     }
 
-    public async Task<int> CountSearchResultsAsync(SearchHotelsDto dto)
+    public async Task<int> CountSearchResultsAsync(
+        SearchHotelsDto dto,
+        CancellationToken cancellationToken = default)
     {
-        return await BuildSearchQuery(dto).CountAsync();
+        return await BuildSearchQuery(dto).CountAsync(cancellationToken);
     }
 
-    public async Task<List<Hotel>> GetByManagerIdAsync(Guid userId)
+    public async Task<List<Hotel>> GetByManagerIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Hotels
             .Where(h => h.HotelManagers.Any(hm => hm.UserId == userId))
             .Include(h => h.PrimaryImage)
             .OrderBy(h => h.Name)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<int> CountAsync()
+    public async Task<int> CountAsync(
+        CancellationToken cancellationToken = default)
     {
-        return await _context.Hotels.CountAsync();
+        return await _context.Hotels.CountAsync(cancellationToken);
     }
 
-    public async Task<int> CountActiveAsync()
+    public async Task<int> CountActiveAsync(
+        CancellationToken cancellationToken = default)
     {
         return await _context.Hotels
-            .CountAsync(h => h.IsActive);
+            .CountAsync(h => h.IsActive, cancellationToken);
     }
 
-    public async Task<int> CountByManagerIdAsync(Guid managerId)
+    public async Task<int> CountByManagerIdAsync(
+        Guid managerId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Hotels
             .CountAsync(h => h.HotelManagers.Any(
-                hm => hm.UserId == managerId));
+                hm => hm.UserId == managerId),
+                cancellationToken);
     }
 
-    public async Task<int> CountActiveByManagerIdAsync(Guid managerId)
+    public async Task<int> CountActiveByManagerIdAsync(
+        Guid managerId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.Hotels
             .CountAsync(h =>
                 h.IsActive &&
-                h.HotelManagers.Any(hm => hm.UserId == managerId));
+                h.HotelManagers.Any(hm => hm.UserId == managerId),
+                cancellationToken);
+    }
+
+    public Task<HotelDashboardCounts> GetDashboardCountsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return GetDashboardCountsAsync(_context.Hotels, cancellationToken);
+    }
+
+    public Task<HotelDashboardCounts> GetDashboardCountsByManagerIdAsync(
+        Guid managerId,
+        CancellationToken cancellationToken = default)
+    {
+        var hotels = _context.Hotels.Where(h =>
+            h.HotelManagers.Any(hm => hm.UserId == managerId));
+        return GetDashboardCountsAsync(hotels, cancellationToken);
+    }
+
+    private static async Task<HotelDashboardCounts> GetDashboardCountsAsync(
+        IQueryable<Hotel> hotels,
+        CancellationToken cancellationToken)
+    {
+        return await hotels
+            .GroupBy(_ => 1)
+            .Select(group => new HotelDashboardCounts(
+                group.Count(),
+                group.Count(hotel => hotel.IsActive)))
+            .SingleOrDefaultAsync(cancellationToken)
+            ?? new HotelDashboardCounts(0, 0);
     }
 }

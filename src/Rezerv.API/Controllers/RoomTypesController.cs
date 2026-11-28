@@ -17,7 +17,9 @@ public class RoomTypesController : ApiControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin,HotelManager")]
-    public async Task<IActionResult> CreateRoomType(CreateRoomTypeDto dto)
+    public async Task<IActionResult> CreateRoomType(
+        CreateRoomTypeDto dto,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -29,7 +31,8 @@ public class RoomTypesController : ApiControllerBase
             var roomType = await _roomTypeService.CreateRoomTypeAsync(
                 dto,
                 userId,
-                isAdmin);
+                isAdmin,
+                cancellationToken);
 
             return Ok(roomType);
         }
@@ -44,9 +47,13 @@ public class RoomTypesController : ApiControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetRoomType(Guid id)
+    public async Task<IActionResult> GetRoomType(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var roomType = await _roomTypeService.GetRoomTypeAsync(id);
+        var roomType = await _roomTypeService.GetRoomTypeAsync(
+            id,
+            cancellationToken);
 
         if (roomType == null)
             return NotFound();
@@ -55,9 +62,13 @@ public class RoomTypesController : ApiControllerBase
     }
 
     [HttpGet("hotel/{hotelId:guid}")]
-    public async Task<IActionResult> GetRoomTypesByHotel(Guid hotelId)
+    public async Task<IActionResult> GetRoomTypesByHotel(
+        Guid hotelId,
+        CancellationToken cancellationToken)
     {
-        var roomTypes = await _roomTypeService.GetRoomTypesByHotelAsync(hotelId);
+        var roomTypes = await _roomTypeService.GetRoomTypesByHotelAsync(
+            hotelId,
+            cancellationToken);
 
         return Ok(roomTypes);
     }

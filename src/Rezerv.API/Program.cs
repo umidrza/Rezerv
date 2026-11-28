@@ -144,6 +144,7 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
 
 builder.Services.AddCors(options =>

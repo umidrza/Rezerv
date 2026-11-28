@@ -27,8 +27,12 @@ public class AuthService : IAuthService
         _jwtSettings = jwtOptions.Value;
     }
 
-    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
+    public async Task<AuthResponseDto> RegisterAsync(
+        RegisterDto dto,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var user = new ApplicationUser
         {
             UserName = dto.Email,
@@ -45,13 +49,18 @@ public class AuthService : IAuthService
         }
 
         await _userManager.AddToRoleAsync(user, "Customer");
+        cancellationToken.ThrowIfCancellationRequested();
 
-        return await GenerateTokenAsync(user);
+        return await GenerateTokenAsync(user, cancellationToken);
     }
 
-    public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
+    public async Task<AuthResponseDto> LoginAsync(
+        LoginDto dto,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var user = await _userManager.FindByEmailAsync(dto.Email);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (user == null)
         {
@@ -62,20 +71,26 @@ public class AuthService : IAuthService
             user,
             dto.Password,
             lockoutOnFailure: true);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (!result.Succeeded)
             throw new UnauthorizedAccessException("Invalid email or password.");
 
-        return await GenerateTokenAsync(user);
+        return await GenerateTokenAsync(user, cancellationToken);
     }
 
-    public async Task<AuthUserDto?> GetCurrentUserAsync(Guid userId)
+    public async Task<AuthUserDto?> GetCurrentUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var user = await _userManager.FindByIdAsync(userId.ToString());
+        cancellationToken.ThrowIfCancellationRequested();
         if (user is null)
             return null;
 
         var roles = await _userManager.GetRolesAsync(user);
+        cancellationToken.ThrowIfCancellationRequested();
         return new AuthUserDto(
             user.Id,
             user.Email ?? string.Empty,
@@ -83,7 +98,9 @@ public class AuthService : IAuthService
             roles.ToArray());
     }
 
-    private async Task<AuthResponseDto> GenerateTokenAsync(ApplicationUser user)
+    private async Task<AuthResponseDto> GenerateTokenAsync(
+        ApplicationUser user,
+        CancellationToken cancellationToken)
     {
         var claims = new List<Claim>
         {
@@ -93,6 +110,7 @@ public class AuthService : IAuthService
         };
 
         var roles = await _userManager.GetRolesAsync(user);
+        cancellationToken.ThrowIfCancellationRequested();
 
         foreach (var role in roles)
         {

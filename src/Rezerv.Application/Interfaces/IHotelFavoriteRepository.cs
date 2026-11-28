@@ -4,11 +4,20 @@ namespace Rezerv.Application.Interfaces;
 
 public interface IHotelFavoriteRepository
 {
-    Task<List<HotelFavorite>> GetByUserIdAsync(Guid userId);
+    Task<List<HotelFavorite>> GetByUserIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
 
-    Task<HotelFavorite?> GetAsync(Guid userId, Guid hotelId);
+    Task<HotelFavorite?> GetAsync(
+        Guid userId,
+        Guid hotelId,
+        CancellationToken cancellationToken = default);
 
-    Task AddAsync(HotelFavorite favorite);
+    Task AddAsync(
+        HotelFavorite favorite,
+        CancellationToken cancellationToken = default);
 
-    Task DeleteAsync(HotelFavorite favorite);
+    Task DeleteAsync(
+        HotelFavorite favorite,
+        CancellationToken cancellationToken = default);
 }

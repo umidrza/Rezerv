@@ -1,5 +1,6 @@
 using Rezerv.Application.DTOs.Booking;
 using Rezerv.Application.Interfaces;
+using Rezerv.Application.Security;
 using Rezerv.Domain.Entities;
 using Rezerv.Domain.Enums;
 
@@ -29,7 +30,8 @@ public class BookingService : IBookingService
 
     public async Task<BookingDto> CreateBookingAsync(
         CreateBookingDto dto,
-        Guid userId)
+        Guid userId,
+        CancellationToken cancellationToken = default)
     {
         if (dto.CheckIn.Date < DateTime.UtcNow.Date)
             throw new ArgumentException("Check-in date cannot be in the past.");
@@ -40,7 +42,9 @@ public class BookingService : IBookingService
         if (dto.NumberOfGuests <= 0)
             throw new ArgumentException("Number of guests must be greater than zero.");
 
-        var room = await _roomRepository.GetByIdAsync(dto.RoomId);
+        var room = await _roomRepository.GetByIdAsync(
+            dto.RoomId,
+            cancellationToken);
 
         if (room == null || !room.IsActive)
             throw new ArgumentException("Room not found or inactive.");
@@ -73,15 +77,19 @@ public class BookingService : IBookingService
             CreatedAt = DateTime.UtcNow
         };
 
-        await _bookingRepository.AddIfAvailableAsync(booking);
+        await _bookingRepository.AddIfAvailableAsync(booking, cancellationToken);
 
-        return await GetBookingAsync(booking.Id)
+        return await GetBookingAsync(booking.Id, cancellationToken)
             ?? throw new InvalidOperationException("Booking could not be retrieved.");
     }
 
-    public async Task<BookingDto?> GetBookingAsync(Guid bookingId)
+    public async Task<BookingDto?> GetBookingAsync(
+        Guid bookingId,
+        CancellationToken cancellationToken = default)
     {
-        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+        var booking = await _bookingRepository.GetByIdAsync(
+            bookingId,
+            cancellationToken);
 
         return booking == null ? null : MapToDto(booking);
     }
@@ -89,7 +97,8 @@ public class BookingService : IBookingService
     public async Task<bool> CheckRoomAvailabilityAsync(
         Guid roomId,
         DateTime checkIn,
-        DateTime checkOut)
+        DateTime checkOut,
+        CancellationToken cancellationToken = default)
     {
         if (checkIn.Date < DateTime.UtcNow.Date)
             throw new ArgumentException("Check-in date cannot be in the past.");
@@ -97,7 +106,9 @@ public class BookingService : IBookingService
         if (checkOut <= checkIn)
             throw new ArgumentException("Check-out must be after check-in.");
 
-        var room = await _roomRepository.GetByIdAsync(roomId);
+        var room = await _roomRepository.GetByIdAsync(
+            roomId,
+            cancellationToken);
 
         if (room == null || !room.IsActive)
             return false;
@@ -108,63 +119,64 @@ public class BookingService : IBookingService
         return await _roomRepository.IsRoomAvailableAsync(
             roomId,
             checkIn,
-            checkOut);
+            checkOut,
+            cancellationToken);
     }
 
     public async Task<bool> ApproveBookingAsync(
         Guid bookingId,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+        var booking = await _bookingRepository.GetByIdAsync(
+            bookingId,
+            cancellationToken);
 
         if (booking == null)
             return false;
 
-        if (!isAdmin)
-        {
-            var isAssigned = await _hotelManagerRepository.IsManagerAssignedAsync(
-                userId,
-                booking.HotelId);
-
-            if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You cannot manage this hotel's bookings.");
-        }
+        await HotelManagerAuthorization.EnsureCanManageHotelAsync(
+            _hotelManagerRepository,
+            userId,
+            booking.HotelId,
+            isAdmin,
+            cancellationToken);
 
         if (booking.Status != BookingStatus.Submitted)
             return false;
 
-        return await _bookingRepository.ApproveAsync(bookingId);
+        return await _bookingRepository.ApproveAsync(
+            bookingId,
+            cancellationToken);
     }
 
     public async Task<bool> RejectBookingAsync(
         Guid bookingId,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+        var booking = await _bookingRepository.GetByIdAsync(
+            bookingId,
+            cancellationToken);
 
         if (booking == null)
             return false;
 
-        if (!isAdmin)
-        {
-            var isAssigned = await _hotelManagerRepository.IsManagerAssignedAsync(
-                userId,
-                booking.HotelId);
-
-            if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You cannot manage this hotel's bookings.");
-        }
+        await HotelManagerAuthorization.EnsureCanManageHotelAsync(
+            _hotelManagerRepository,
+            userId,
+            booking.HotelId,
+            isAdmin,
+            cancellationToken);
 
         if (booking.Status != BookingStatus.Submitted)
             return false;
 
         booking.Status = BookingStatus.Rejected;
 
-        await _bookingRepository.UpdateAsync(booking);
+        await _bookingRepository.UpdateAsync(booking, cancellationToken);
 
         return true;
     }
@@ -172,35 +184,42 @@ public class BookingService : IBookingService
     public async Task<List<BookingDto>> GetHotelBookingsAsync(
         Guid hotelId,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        if (!isAdmin)
-        {
-            var isAssigned = await _hotelManagerRepository.IsManagerAssignedAsync(
-                userId,
-                hotelId);
+        await HotelManagerAuthorization.EnsureCanManageHotelAsync(
+            _hotelManagerRepository,
+            userId,
+            hotelId,
+            isAdmin,
+            cancellationToken);
 
-            if (!isAssigned)
-                throw new UnauthorizedAccessException("You cannot access this hotel's bookings.");
-        }
-
-        var bookings = await _bookingRepository.GetByHotelIdAsync(hotelId);
+        var bookings = await _bookingRepository.GetByHotelIdAsync(
+            hotelId,
+            cancellationToken);
 
         return bookings.Select(MapToDto).ToList();
     }
 
-    public async Task<List<BookingDto>> GetMyBookingsAsync(Guid userId)
+    public async Task<List<BookingDto>> GetMyBookingsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
     {
-        var bookings = await _bookingRepository.GetByUserIdAsync(userId);
+        var bookings = await _bookingRepository.GetByUserIdAsync(
+            userId,
+            cancellationToken);
 
         return bookings.Select(MapToDto).ToList();
     }
 
     public async Task CancelBookingAsync(
         Guid bookingId,
-        Guid userId)
+        Guid userId,
+        CancellationToken cancellationToken = default)
     {
-        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+        var booking = await _bookingRepository.GetByIdAsync(
+            bookingId,
+            cancellationToken);
 
         if (booking == null)
             throw new KeyNotFoundException("Booking not found.");
@@ -216,28 +235,30 @@ public class BookingService : IBookingService
 
         booking.Status = BookingStatus.Cancelled;
 
-        await _bookingRepository.UpdateAsync(booking);
+        await _bookingRepository.UpdateAsync(booking, cancellationToken);
     }
 
     public async Task<BookingDto?> GetBookingForUserAsync(
         Guid bookingId,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var booking = await _bookingRepository.GetByIdAsync(bookingId);
+        var booking = await _bookingRepository.GetByIdAsync(
+            bookingId,
+            cancellationToken);
 
         if (booking == null)
             return null;
 
         if (!isAdmin && booking.UserId != userId)
         {
-            var isAssigned = await _hotelManagerRepository.IsManagerAssignedAsync(
+            await HotelManagerAuthorization.EnsureCanManageHotelAsync(
+                _hotelManagerRepository,
                 userId,
-                booking.HotelId);
-
-            if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You cannot access this booking.");
+                booking.HotelId,
+                isAdmin,
+                cancellationToken);
         }
 
         return MapToDto(booking);

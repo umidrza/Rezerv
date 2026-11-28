@@ -6,38 +6,49 @@ public interface IBookingService
 {
     Task<BookingDto> CreateBookingAsync(
         CreateBookingDto dto,
-        Guid userId);
+        Guid userId,
+        CancellationToken cancellationToken = default);
 
-    Task<BookingDto?> GetBookingAsync(Guid bookingId);
+    Task<BookingDto?> GetBookingAsync(
+        Guid bookingId,
+        CancellationToken cancellationToken = default);
 
     Task<bool> CheckRoomAvailabilityAsync(
         Guid roomId,
         DateTime checkIn,
-        DateTime checkOut);
+        DateTime checkOut,
+        CancellationToken cancellationToken = default);
 
     Task<bool> ApproveBookingAsync(
         Guid bookingId,
         Guid userId,
-        bool isAdmin);
+        bool isAdmin,
+        CancellationToken cancellationToken = default);
 
     Task<bool> RejectBookingAsync(
         Guid bookingId,
         Guid userId,
-        bool isAdmin);
+        bool isAdmin,
+        CancellationToken cancellationToken = default);
 
     Task<List<BookingDto>> GetHotelBookingsAsync(
         Guid hotelId,
         Guid userId,
-        bool isAdmin);
+        bool isAdmin,
+        CancellationToken cancellationToken = default);
 
-    Task<List<BookingDto>> GetMyBookingsAsync(Guid userId);
+    Task<List<BookingDto>> GetMyBookingsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
 
     Task CancelBookingAsync(
         Guid bookingId,
-        Guid userId);
+        Guid userId,
+        CancellationToken cancellationToken = default);
 
     Task<BookingDto?> GetBookingForUserAsync(
         Guid bookingId,
         Guid userId,
-        bool isAdmin);
+        bool isAdmin,
+        CancellationToken cancellationToken = default);
 }

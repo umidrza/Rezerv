@@ -18,7 +18,9 @@ public class RoomsController : ApiControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin,HotelManager")]
-    public async Task<IActionResult> CreateRoom(CreateRoomDto dto)
+    public async Task<IActionResult> CreateRoom(
+        CreateRoomDto dto,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -30,7 +32,8 @@ public class RoomsController : ApiControllerBase
             var room = await _roomService.CreateRoomAsync(
                 dto,
                 userId,
-                isAdmin);
+                isAdmin,
+                cancellationToken);
 
             return Ok(room);
         }
@@ -45,9 +48,11 @@ public class RoomsController : ApiControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetRoom(Guid id)
+    public async Task<IActionResult> GetRoom(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var room = await _roomService.GetRoomAsync(id);
+        var room = await _roomService.GetRoomAsync(id, cancellationToken);
 
         if (room == null)
             return NotFound();
@@ -56,9 +61,13 @@ public class RoomsController : ApiControllerBase
     }
 
     [HttpGet("roomtype/{roomTypeId:guid}")]
-    public async Task<IActionResult> GetRoomsByRoomType(Guid roomTypeId)
+    public async Task<IActionResult> GetRoomsByRoomType(
+        Guid roomTypeId,
+        CancellationToken cancellationToken)
     {
-        var rooms = await _roomService.GetRoomsByRoomTypeAsync(roomTypeId);
+        var rooms = await _roomService.GetRoomsByRoomTypeAsync(
+            roomTypeId,
+            cancellationToken);
 
         return Ok(rooms);
     }
@@ -67,7 +76,8 @@ public class RoomsController : ApiControllerBase
     [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> UpdateRoom(
     Guid id,
-    UpdateRoomDto dto)
+    UpdateRoomDto dto,
+    CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -77,7 +87,7 @@ public class RoomsController : ApiControllerBase
         try
         {
             var room = await _roomService.UpdateRoomAsync(
-                id, dto, userId, isAdmin);
+                id, dto, userId, isAdmin, cancellationToken);
 
             return Ok(room);
         }
@@ -93,7 +103,9 @@ public class RoomsController : ApiControllerBase
 
     [HttpPatch("{id:guid}/status")]
     [Authorize(Roles = "Admin,HotelManager")]
-    public async Task<IActionResult> ToggleRoomStatus(Guid id)
+    public async Task<IActionResult> ToggleRoomStatus(
+        Guid id,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -103,7 +115,7 @@ public class RoomsController : ApiControllerBase
         try
         {
             var room = await _roomService.ToggleRoomStatusAsync(
-                id, userId, isAdmin);
+                id, userId, isAdmin, cancellationToken);
 
             return Ok(room);
         }

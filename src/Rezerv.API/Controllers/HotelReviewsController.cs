@@ -16,9 +16,13 @@ public class HotelReviewsController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetReviews(Guid hotelId)
+    public async Task<IActionResult> GetReviews(
+        Guid hotelId,
+        CancellationToken cancellationToken)
     {
-        var reviews = await _reviewService.GetHotelReviewsAsync(hotelId);
+        var reviews = await _reviewService.GetHotelReviewsAsync(
+            hotelId,
+            cancellationToken);
         return Ok(reviews);
     }
 
@@ -26,7 +30,8 @@ public class HotelReviewsController : ApiControllerBase
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> CreateReview(
         Guid hotelId,
-        [FromBody] CreateHotelReviewDto dto)
+        [FromBody] CreateHotelReviewDto dto,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
@@ -34,7 +39,8 @@ public class HotelReviewsController : ApiControllerBase
         var review = await _reviewService.CreateReviewAsync(
             hotelId,
             userId,
-            dto);
+            dto,
+            cancellationToken);
 
         return CreatedAtAction(
             nameof(GetReviews),
@@ -44,14 +50,17 @@ public class HotelReviewsController : ApiControllerBase
 
     [HttpGet("eligibility")]
     [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> CanReview(Guid hotelId)
+    public async Task<IActionResult> CanReview(
+        Guid hotelId,
+        CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized();
 
         var canReview = await _reviewService.CanReviewHotelAsync(
             hotelId,
-            userId);
+            userId,
+            cancellationToken);
 
         return Ok(canReview);
     }

@@ -14,22 +14,28 @@ public class RoomTypeRepository : IRoomTypeRepository
         _context = context;
     }
 
-    public async Task<RoomType?> GetByIdAsync(Guid id)
+    public async Task<RoomType?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         return await _context.RoomTypes
-            .FirstOrDefaultAsync(rt => rt.Id == id);
+            .FirstOrDefaultAsync(rt => rt.Id == id, cancellationToken);
     }
 
-    public async Task<List<RoomType>> GetByHotelIdAsync(Guid hotelId)
+    public async Task<List<RoomType>> GetByHotelIdAsync(
+        Guid hotelId,
+        CancellationToken cancellationToken = default)
     {
         return await _context.RoomTypes
             .Where(rt => rt.HotelId == hotelId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task AddAsync(RoomType roomType)
+    public async Task AddAsync(
+        RoomType roomType,
+        CancellationToken cancellationToken = default)
     {
-        await _context.RoomTypes.AddAsync(roomType);
-        await _context.SaveChangesAsync();
+        await _context.RoomTypes.AddAsync(roomType, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

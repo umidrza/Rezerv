@@ -1,5 +1,7 @@
 using Rezerv.Application.DTOs.Room;
 using Rezerv.Application.Interfaces;
+using Rezerv.Application.Mappings;
+using Rezerv.Application.Security;
 using Rezerv.Domain.Entities;
 
 namespace Rezerv.Application.Services;
@@ -23,7 +25,8 @@ public class RoomManagementService : IRoomManagementService
     public async Task<RoomDto> CreateRoomAsync(
         CreateRoomDto dto,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(dto.RoomNumber))
             throw new ArgumentException("Room number is required.");
@@ -31,20 +34,19 @@ public class RoomManagementService : IRoomManagementService
         if (dto.Floor < 0)
             throw new ArgumentException("Floor cannot be negative.");
 
-        var roomType = await _roomTypeRepository.GetByIdAsync(dto.RoomTypeId);
+        var roomType = await _roomTypeRepository.GetByIdAsync(
+            dto.RoomTypeId,
+            cancellationToken);
 
         if (roomType == null)
             throw new ArgumentException("Room type not found.");
 
-        if (!isAdmin)
-        {
-            var isAssigned = await _hotelManagerRepository
-                .IsManagerAssignedAsync(userId, roomType.HotelId);
-
-            if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You are not assigned to this hotel.");
-        }
+        await HotelManagerAuthorization.EnsureCanManageHotelAsync(
+            _hotelManagerRepository,
+            userId,
+            roomType.HotelId,
+            isAdmin,
+            cancellationToken);
 
         var room = new Room
         {
@@ -55,32 +57,39 @@ public class RoomManagementService : IRoomManagementService
             IsActive = true
         };
 
-        await _roomRepository.AddAsync(room);
+        await _roomRepository.AddAsync(room, cancellationToken);
 
-        return MapToDto(room);
+        return RoomDtoMapper.Map(room);
     }
 
-    public async Task<RoomDto?> GetRoomAsync(Guid id)
+    public async Task<RoomDto?> GetRoomAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
-        var room = await _roomRepository.GetByIdAsync(id);
+        var room = await _roomRepository.GetByIdAsync(id, cancellationToken);
 
-        return room == null ? null : MapToDto(room);
+        return room == null ? null : RoomDtoMapper.Map(room);
     }
 
-    public async Task<List<RoomDto>> GetRoomsByRoomTypeAsync(Guid roomTypeId)
+    public async Task<List<RoomDto>> GetRoomsByRoomTypeAsync(
+        Guid roomTypeId,
+        CancellationToken cancellationToken = default)
     {
-        var rooms = await _roomRepository.GetByRoomTypeIdAsync(roomTypeId);
+        var rooms = await _roomRepository.GetByRoomTypeIdAsync(
+            roomTypeId,
+            cancellationToken);
 
-        return rooms.Select(MapToDto).ToList();
+        return rooms.Select(RoomDtoMapper.Map).ToList();
     }
 
     public async Task<RoomDto> UpdateRoomAsync(
-    Guid id,
-    UpdateRoomDto dto,
-    Guid userId,
-    bool isAdmin)
+        Guid id,
+        UpdateRoomDto dto,
+        Guid userId,
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var room = await _roomRepository.GetByIdAsync(id);
+        var room = await _roomRepository.GetByIdAsync(id, cancellationToken);
 
         if (room == null)
             throw new ArgumentException("Room not found.");
@@ -91,60 +100,43 @@ public class RoomManagementService : IRoomManagementService
         if (dto.Floor < 0)
             throw new ArgumentException("Floor cannot be negative.");
 
-        if (!isAdmin)
-        {
-            var isAssigned = await _hotelManagerRepository
-                .IsManagerAssignedAsync(userId, room.RoomType.HotelId);
-
-            if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You are not assigned to this hotel.");
-        }
+        await HotelManagerAuthorization.EnsureCanManageHotelAsync(
+            _hotelManagerRepository,
+            userId,
+            room.RoomType.HotelId,
+            isAdmin,
+            cancellationToken);
 
         room.RoomNumber = dto.RoomNumber;
         room.Floor = dto.Floor;
 
-        await _roomRepository.UpdateAsync(room);
+        await _roomRepository.UpdateAsync(room, cancellationToken);
 
-        return MapToDto(room);
+        return RoomDtoMapper.Map(room);
     }
 
     public async Task<RoomDto> ToggleRoomStatusAsync(
         Guid id,
         Guid userId,
-        bool isAdmin)
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
     {
-        var room = await _roomRepository.GetByIdAsync(id);
+        var room = await _roomRepository.GetByIdAsync(id, cancellationToken);
 
         if (room == null)
             throw new ArgumentException("Room not found.");
 
-        if (!isAdmin)
-        {
-            var isAssigned = await _hotelManagerRepository
-                .IsManagerAssignedAsync(userId, room.RoomType.HotelId);
-
-            if (!isAssigned)
-                throw new UnauthorizedAccessException(
-                    "You are not assigned to this hotel.");
-        }
+        await HotelManagerAuthorization.EnsureCanManageHotelAsync(
+            _hotelManagerRepository,
+            userId,
+            room.RoomType.HotelId,
+            isAdmin,
+            cancellationToken);
 
         room.IsActive = !room.IsActive;
 
-        await _roomRepository.UpdateAsync(room);
+        await _roomRepository.UpdateAsync(room, cancellationToken);
 
-        return MapToDto(room);
-    }
-
-    private static RoomDto MapToDto(Room room)
-    {
-        return new RoomDto
-        {
-            Id = room.Id,
-            RoomTypeId = room.RoomTypeId,
-            RoomNumber = room.RoomNumber,
-            Floor = room.Floor,
-            IsActive = room.IsActive
-        };
+        return RoomDtoMapper.Map(room);
     }
 }
