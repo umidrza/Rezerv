@@ -41,6 +41,8 @@ public class AuthService : IAuthService
                 string.Join(", ", result.Errors.Select(e => e.Description)));
         }
 
+        await _userManager.AddToRoleAsync(user, "Customer");
+
         return await GenerateTokenAsync(user);
     }
 
