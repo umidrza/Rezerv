@@ -1,6 +1,7 @@
 using Rezerv.Application.DTOs.Hotel;
 using Rezerv.Application.Interfaces;
 using Rezerv.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace Rezerv.Application.Services;
 
@@ -10,17 +11,20 @@ public class HotelImageService : IHotelImageService
     private readonly IHotelRepository _hotelRepository;
     private readonly IHotelManagerRepository _hotelManagerRepository;
     private readonly IFileStorageService _fileStorageService;
+    private readonly ILogger<HotelImageService> _logger;
 
     public HotelImageService(
         IHotelImageRepository hotelImageRepository,
         IHotelRepository hotelRepository,
         IHotelManagerRepository hotelManagerRepository,
-        IFileStorageService fileStorageService)
+        IFileStorageService fileStorageService,
+        ILogger<HotelImageService> logger)
     {
         _hotelImageRepository = hotelImageRepository;
         _hotelRepository = hotelRepository;
         _hotelManagerRepository = hotelManagerRepository;
         _fileStorageService = fileStorageService;
+        _logger = logger;
     }
 
     public async Task<HotelImageDto> AddImageAsync(
@@ -47,13 +51,28 @@ public class HotelImageService : IHotelImageService
             ImageUrl = imageUrl
         };
 
-        await _hotelImageRepository.AddAsync(image);
-
-        // Automatically select the first uploaded image as primary.
-        if (hotel.PrimaryImageId == null)
+        try
         {
-            hotel.PrimaryImageId = image.Id;
-            await _hotelRepository.UpdateAsync(hotel);
+            await _hotelImageRepository.AddWithHotelAsync(
+                image,
+                hotel,
+                setAsPrimary: hotel.PrimaryImageId is null);
+        }
+        catch
+        {
+            try
+            {
+                await _fileStorageService.DeleteImageAsync(imageUrl);
+            }
+            catch (Exception cleanupException)
+            {
+                _logger.LogWarning(
+                    cleanupException,
+                    "Could not remove hotel image file {ImageUrl} after metadata persistence failed.",
+                    imageUrl);
+            }
+
+            throw;
         }
 
         return MapToDto(image);
@@ -97,14 +116,19 @@ public class HotelImageService : IHotelImageService
         if (image == null || image.HotelId != hotelId)
             throw new ArgumentException("Image not found.");
 
-        if (hotel.PrimaryImageId == imageId)
-        {
-            hotel.PrimaryImageId = null;
-            await _hotelRepository.UpdateAsync(hotel);
-        }
+        await _hotelImageRepository.DeleteWithHotelAsync(image, hotel);
 
-        await _hotelImageRepository.DeleteAsync(image);
-        await _fileStorageService.DeleteImageAsync(image.ImageUrl);
+        try
+        {
+            await _fileStorageService.DeleteImageAsync(image.ImageUrl);
+        }
+        catch (Exception cleanupException)
+        {
+            _logger.LogWarning(
+                cleanupException,
+                "Could not remove hotel image file {ImageUrl} after its database record was deleted.",
+                image.ImageUrl);
+        }
     }
 
     private async Task<Hotel> GetAuthorizedHotelAsync(

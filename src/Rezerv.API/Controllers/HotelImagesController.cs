@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Rezerv.Application.Constants;
 using Rezerv.Application.DTOs.Hotel;
 using Rezerv.Application.Interfaces;
 
@@ -19,6 +20,9 @@ public class HotelImagesController : ApiControllerBase
     [HttpPost]
     [Authorize(Roles = "Admin,HotelManager")]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(ImageUploadLimits.MaxMultipartRequestSizeBytes)]
+    [RequestFormLimits(
+        MultipartBodyLengthLimit = ImageUploadLimits.MaxMultipartRequestSizeBytes)]
     public async Task<IActionResult> AddImage(
         [FromForm] CreateHotelImageDto dto)
     {

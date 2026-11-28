@@ -33,15 +33,45 @@ public class HotelImageRepository : IHotelImageRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task AddWithHotelAsync(
+        HotelImage hotelImage,
+        Hotel hotel,
+        bool setAsPrimary)
+    {
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync();
+
+        await _context.HotelImages.AddAsync(hotelImage);
+        await _context.SaveChangesAsync();
+
+        if (setAsPrimary)
+        {
+            hotel.PrimaryImageId = hotelImage.Id;
+            await _context.SaveChangesAsync();
+        }
+
+        await transaction.CommitAsync();
+    }
+
     public async Task UpdateRangeAsync(List<HotelImage> hotelImages)
     {
         _context.HotelImages.UpdateRange(hotelImages);
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(HotelImage hotelImage)
+    public async Task DeleteWithHotelAsync(HotelImage hotelImage, Hotel hotel)
     {
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync();
+
+        if (hotel.PrimaryImageId == hotelImage.Id)
+        {
+            hotel.PrimaryImageId = null;
+            await _context.SaveChangesAsync();
+        }
+
         _context.HotelImages.Remove(hotelImage);
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
     }
 }

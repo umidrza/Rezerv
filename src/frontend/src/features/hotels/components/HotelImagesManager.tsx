@@ -82,7 +82,7 @@ export default function HotelImagesManager({
 
                     <input
                         type="file"
-                        accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.avif,.tif,.tiff"
+                        accept=".jpg,.jpeg,.png,.webp"
                         onChange={handleFileChange}
                         disabled={saving}
                         className="hidden"
