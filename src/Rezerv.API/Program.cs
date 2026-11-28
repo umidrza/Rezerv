@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Rezerv.Infrastructure.Settings;
 using Rezerv.Infrastructure.Services;
 using Rezerv.Infrastructure.Data.Seed;
+using Rezerv.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +60,8 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddControllers();
 
@@ -98,6 +101,7 @@ builder.Services.AddScoped<IHotelFavoriteService, HotelFavoriteService>();
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors("Frontend");
 

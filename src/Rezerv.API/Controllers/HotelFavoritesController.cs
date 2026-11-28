@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.Interfaces;
@@ -8,7 +7,7 @@ namespace Rezerv.API.Controllers;
 [ApiController]
 [Route("api/favorites")]
 [Authorize(Roles = "Customer")]
-public class HotelFavoritesController : ControllerBase
+public class HotelFavoritesController : ApiControllerBase
 {
     private readonly IHotelFavoriteService _favoriteService;
 
@@ -17,16 +16,13 @@ public class HotelFavoritesController : ControllerBase
         _favoriteService = favoriteService;
     }
 
-    private Guid GetUserId()
-    {
-        return Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-    }
-
     [HttpGet]
     public async Task<IActionResult> GetMyFavorites()
     {
-        var favorites = await _favoriteService.GetMyFavoritesAsync(GetUserId());
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
+        var favorites = await _favoriteService.GetMyFavoritesAsync(userId);
 
         return Ok(favorites);
     }
@@ -34,7 +30,10 @@ public class HotelFavoritesController : ControllerBase
     [HttpPost("{hotelId:guid}")]
     public async Task<IActionResult> AddFavorite(Guid hotelId)
     {
-        await _favoriteService.AddFavoriteAsync(GetUserId(), hotelId);
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
+        await _favoriteService.AddFavoriteAsync(userId, hotelId);
 
         return NoContent();
     }
@@ -42,7 +41,10 @@ public class HotelFavoritesController : ControllerBase
     [HttpDelete("{hotelId:guid}")]
     public async Task<IActionResult> RemoveFavorite(Guid hotelId)
     {
-        await _favoriteService.RemoveFavoriteAsync(GetUserId(), hotelId);
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
+        await _favoriteService.RemoveFavoriteAsync(userId, hotelId);
 
         return NoContent();
     }
@@ -50,8 +52,11 @@ public class HotelFavoritesController : ControllerBase
     [HttpGet("{hotelId:guid}/status")]
     public async Task<IActionResult> IsFavorite(Guid hotelId)
     {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
         var isFavorite = await _favoriteService.IsFavoriteAsync(
-            GetUserId(),
+            userId,
             hotelId);
 
         return Ok(isFavorite);

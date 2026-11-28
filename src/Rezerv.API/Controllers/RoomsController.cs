@@ -1,14 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.DTOs.Room;
 using Rezerv.Application.Interfaces;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Rezerv.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RoomsController : ControllerBase
+public class RoomsController : ApiControllerBase
 {
     private readonly IRoomManagementService _roomService;
 
@@ -21,8 +20,8 @@ public class RoomsController : ControllerBase
     [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> CreateRoom(CreateRoomDto dto)
     {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
 
         var isAdmin = User.IsInRole("Admin");
 
@@ -70,8 +69,8 @@ public class RoomsController : ControllerBase
     Guid id,
     UpdateRoomDto dto)
     {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
 
         var isAdmin = User.IsInRole("Admin");
 
@@ -96,8 +95,8 @@ public class RoomsController : ControllerBase
     [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> ToggleRoomStatus(Guid id)
     {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
 
         var isAdmin = User.IsInRole("Admin");
 

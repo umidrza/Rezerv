@@ -2,13 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.DTOs.RoomType;
 using Rezerv.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
-
 namespace Rezerv.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RoomTypesController : ControllerBase
+public class RoomTypesController : ApiControllerBase
 {
     private readonly IRoomTypeService _roomTypeService;
 
@@ -21,8 +19,8 @@ public class RoomTypesController : ControllerBase
     [Authorize(Roles = "Admin,HotelManager")]
     public async Task<IActionResult> CreateRoomType(CreateRoomTypeDto dto)
     {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
 
         var isAdmin = User.IsInRole("Admin");
 

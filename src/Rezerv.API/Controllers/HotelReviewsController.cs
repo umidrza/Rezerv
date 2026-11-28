@@ -2,13 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.DTOs.HotelReview;
 using Rezerv.Application.Interfaces;
-using System.Security.Claims;
-
 namespace Rezerv.API.Controllers;
 
 [ApiController]
 [Route("api/hotels/{hotelId:guid}/reviews")]
-public class HotelReviewsController : ControllerBase
+public class HotelReviewsController : ApiControllerBase
 {
     private readonly IHotelReviewService _reviewService;
 
@@ -30,8 +28,8 @@ public class HotelReviewsController : ControllerBase
         Guid hotelId,
         [FromBody] CreateHotelReviewDto dto)
     {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
 
         var review = await _reviewService.CreateReviewAsync(
             hotelId,
@@ -48,8 +46,8 @@ public class HotelReviewsController : ControllerBase
     [Authorize(Roles = "Customer")]
     public async Task<IActionResult> CanReview(Guid hotelId)
     {
-        var userId = Guid.Parse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
 
         var canReview = await _reviewService.CanReviewHotelAsync(
             hotelId,

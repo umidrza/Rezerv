@@ -198,24 +198,27 @@ public class BookingService : IBookingService
         return bookings.Select(MapToDto).ToList();
     }
 
-    public async Task<bool> CancelBookingAsync(
+    public async Task CancelBookingAsync(
         Guid bookingId,
         Guid userId)
     {
         var booking = await _bookingRepository.GetByIdAsync(bookingId);
 
-        if (booking == null || booking.UserId != userId)
-            return false;
+        if (booking == null)
+            throw new KeyNotFoundException("Booking not found.");
+
+        if (booking.UserId != userId)
+            throw new UnauthorizedAccessException(
+                "You cannot cancel this booking.");
 
         if (booking.Status != BookingStatus.Submitted &&
             booking.Status != BookingStatus.Approved)
-            return false;
+            throw new InvalidOperationException(
+                "Booking cannot be cancelled in its current state.");
 
         booking.Status = BookingStatus.Cancelled;
 
         await _bookingRepository.UpdateAsync(booking);
-
-        return true;
     }
 
     public async Task<BookingDto?> GetBookingForUserAsync(

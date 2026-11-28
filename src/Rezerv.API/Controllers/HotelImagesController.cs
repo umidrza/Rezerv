@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Rezerv.Application.DTOs.Hotel;
@@ -8,7 +7,7 @@ namespace Rezerv.API.Controllers;
 
 [ApiController]
 [Route("api/hotel-images")]
-public class HotelImagesController : ControllerBase
+public class HotelImagesController : ApiControllerBase
 {
     private readonly IHotelImageService _hotelImageService;
 
@@ -23,11 +22,11 @@ public class HotelImagesController : ControllerBase
     public async Task<IActionResult> AddImage(
         [FromForm] CreateHotelImageDto dto)
     {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
         try
         {
-            var userId = Guid.Parse(
-                User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
             var isAdmin = User.IsInRole("Admin");
 
             var result = await _hotelImageService.AddImageAsync(
@@ -58,11 +57,11 @@ public class HotelImagesController : ControllerBase
         Guid hotelId,
         Guid imageId)
     {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
         try
         {
-            var userId = Guid.Parse(
-                User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
             var isAdmin = User.IsInRole("Admin");
 
             await _hotelImageService.SetPrimaryImageAsync(
@@ -86,11 +85,11 @@ public class HotelImagesController : ControllerBase
         Guid hotelId,
         Guid imageId)
     {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized();
+
         try
         {
-            var userId = Guid.Parse(
-                User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
             var isAdmin = User.IsInRole("Admin");
 
             await _hotelImageService.DeleteImageAsync(

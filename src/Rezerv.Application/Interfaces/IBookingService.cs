@@ -32,7 +32,7 @@ public interface IBookingService
 
     Task<List<BookingDto>> GetMyBookingsAsync(Guid userId);
 
-    Task<bool> CancelBookingAsync(
+    Task CancelBookingAsync(
         Guid bookingId,
         Guid userId);
 
