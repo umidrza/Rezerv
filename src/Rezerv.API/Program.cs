@@ -12,8 +12,48 @@ using Rezerv.Infrastructure.Settings;
 using Rezerv.Infrastructure.Services;
 using Rezerv.Infrastructure.Data.Seed;
 using Rezerv.API.Middleware;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()?
+    .Select(origin => origin?.Trim() ?? string.Empty)
+    .ToArray() ?? [];
+
+if (allowedOrigins.Length == 0 ||
+    allowedOrigins.Any(string.IsNullOrWhiteSpace))
+{
+    throw new InvalidOperationException(
+        "Cors:AllowedOrigins must contain at least one non-empty origin.");
+}
+
+if (!builder.Environment.IsDevelopment() &&
+    allowedOrigins.Contains("*", StringComparer.Ordinal))
+{
+    throw new InvalidOperationException(
+        "Cors:AllowedOrigins cannot contain '*' outside the Development environment.");
+}
+
+foreach (var origin in allowedOrigins)
+{
+    if (origin == "*" && builder.Environment.IsDevelopment())
+        continue;
+
+    if (!Uri.TryCreate(origin, UriKind.Absolute, out var parsedOrigin) ||
+        parsedOrigin is null ||
+        (parsedOrigin.Scheme != Uri.UriSchemeHttp &&
+         parsedOrigin.Scheme != Uri.UriSchemeHttps) ||
+        parsedOrigin.AbsolutePath != "/" ||
+        !string.IsNullOrEmpty(parsedOrigin.Query) ||
+        !string.IsNullOrEmpty(parsedOrigin.Fragment) ||
+        !string.IsNullOrEmpty(parsedOrigin.UserInfo))
+    {
+        throw new InvalidOperationException(
+            $"Cors:AllowedOrigins contains an invalid origin: '{origin}'.");
+    }
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(
@@ -26,12 +66,11 @@ builder.Services
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-var jwtSettings = builder.Configuration
-    .GetSection("JwtSettings")
-    .Get<JwtSettings>()!;
-
-builder.Services.Configure<JwtSettings>(
-    builder.Configuration.GetSection("JwtSettings"));
+builder.Services
+    .AddOptions<JwtSettings>()
+    .Bind(builder.Configuration.GetSection(JwtSettings.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 builder.Services
     .AddAuthentication(options =>
@@ -42,8 +81,13 @@ builder.Services
         options.DefaultChallengeScheme =
             JwtBearerDefaults.AuthenticationScheme;
     })
-    .AddJwtBearer(options =>
+    .AddJwtBearer();
+
+builder.Services
+    .AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IOptions<JwtSettings>>((options, jwtOptions) =>
     {
+        var jwtSettings = jwtOptions.Value;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -69,8 +113,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
+        if (allowedOrigins.Contains("*", StringComparer.Ordinal))
+            policy.AllowAnyOrigin();
+        else
+            policy.WithOrigins(allowedOrigins);
+
         policy
-            .WithOrigins("http://localhost:5173")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -100,6 +148,8 @@ builder.Services.AddScoped<IHotelFavoriteRepository, HotelFavoriteRepository>();
 builder.Services.AddScoped<IHotelFavoriteService, HotelFavoriteService>();
 
 var app = builder.Build();
+
+_ = app.Services.GetRequiredService<IOptions<JwtSettings>>().Value;
 
 app.UseExceptionHandler();
 app.UseHttpsRedirection();

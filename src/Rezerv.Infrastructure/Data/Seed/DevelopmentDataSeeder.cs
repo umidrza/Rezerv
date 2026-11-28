@@ -19,7 +19,8 @@ public static class DevelopmentDataSeeder
         if (string.IsNullOrWhiteSpace(password))
         {
             throw new InvalidOperationException(
-                "DevelopmentSeed:Password is not configured.");
+                "Development data seeding requires 'DevelopmentSeed:Password'. " +
+                "Configure it with .NET User Secrets or the DevelopmentSeed__Password environment variable.");
         }
 
         // 1. Create users
