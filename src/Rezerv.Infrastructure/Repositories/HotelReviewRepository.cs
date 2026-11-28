@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Rezerv.Application.Interfaces;
 using Rezerv.Domain.Entities;
 using Rezerv.Infrastructure.Data;
@@ -42,8 +43,20 @@ public class HotelReviewRepository : IHotelReviewRepository
 
     public async Task AddAsync(HotelReview review)
     {
-        await _context.HotelReviews.AddAsync(review);
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.HotelReviews.AddAsync(review);
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+            when (ex.GetBaseException() is PostgresException postgresException &&
+                  postgresException.SqlState == PostgresErrorCodes.UniqueViolation &&
+                  postgresException.ConstraintName == "IX_HotelReviews_HotelId_UserId")
+        {
+            throw new InvalidOperationException(
+                "You have already reviewed this hotel.",
+                ex);
+        }
     }
 
     public async Task<double> GetAverageRatingAsync(Guid hotelId)

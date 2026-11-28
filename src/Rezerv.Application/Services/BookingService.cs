@@ -5,6 +5,12 @@ using Rezerv.Domain.Enums;
 
 namespace Rezerv.Application.Services;
 
+/// <summary>
+/// New bookings start as Submitted. Submitted bookings may become Approved,
+/// Rejected, or Cancelled; Approved bookings may become Cancelled. Rejected
+/// and Cancelled are terminal states. Submitted and Approved bookings block
+/// room availability for overlapping dates; Draft bookings do not.
+/// </summary>
 public class BookingService : IBookingService
 {
     private readonly IBookingRepository _bookingRepository;
@@ -48,14 +54,6 @@ public class BookingService : IBookingService
         var checkIn = DateTime.SpecifyKind(dto.CheckIn, DateTimeKind.Utc);
         var checkOut = DateTime.SpecifyKind(dto.CheckOut, DateTimeKind.Utc);
 
-        var isAvailable = await _roomRepository.IsRoomAvailableAsync(
-            dto.RoomId,
-            checkIn,
-            checkOut);
-
-        if (!isAvailable)
-            throw new ArgumentException("Room is not available for these dates.");
-
         var pricePerNight = room.RoomType.PricePerNight;
         var nights = (checkOut.Date - checkIn.Date).Days;
         var totalPrice = pricePerNight * nights;
@@ -75,7 +73,7 @@ public class BookingService : IBookingService
             CreatedAt = DateTime.UtcNow
         };
 
-        await _bookingRepository.AddAsync(booking);
+        await _bookingRepository.AddIfAvailableAsync(booking);
 
         return await GetBookingAsync(booking.Id)
             ?? throw new InvalidOperationException("Booking could not be retrieved.");

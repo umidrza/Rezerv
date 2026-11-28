@@ -96,7 +96,8 @@ public class HotelRepository : IHotelRepository
                         r.RoomType.Capacity >= requiredCapacity &&
                         (!dto.CheckIn.HasValue ||
                          !r.Bookings.Any(b =>
-                            b.Status == BookingStatus.Approved &&
+                            (b.Status == BookingStatus.Submitted ||
+                             b.Status == BookingStatus.Approved) &&
                             b.CheckIn < dto.CheckOut &&
                             b.CheckOut > dto.CheckIn))));
         }

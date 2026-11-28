@@ -4,6 +4,7 @@ using Rezerv.Application.Interfaces;
 using Rezerv.Domain.Entities;
 using Rezerv.Domain.Enums;
 using Rezerv.Infrastructure.Data;
+using Npgsql;
 
 namespace Rezerv.Infrastructure.Repositories;
 
@@ -25,10 +26,42 @@ public class BookingRepository : IBookingRepository
             .FirstOrDefaultAsync(b => b.Id == id);
     }
 
-    public async Task AddAsync(Booking booking)
+    public async Task AddIfAvailableAsync(Booking booking)
     {
-        await _context.Bookings.AddAsync(booking);
-        await _context.SaveChangesAsync();
+        try
+        {
+            await using var transaction = await _context.Database
+                .BeginTransactionAsync(IsolationLevel.Serializable);
+
+            var roomIsActive = await _context.Rooms
+                .AnyAsync(r => r.Id == booking.RoomId && r.IsActive);
+
+            var hasConflictingBooking = await _context.Bookings
+                .AnyAsync(b =>
+                    b.RoomId == booking.RoomId &&
+                    (b.Status == BookingStatus.Submitted ||
+                     b.Status == BookingStatus.Approved) &&
+                    b.CheckIn < booking.CheckOut &&
+                    b.CheckOut > booking.CheckIn);
+
+            if (!roomIsActive || hasConflictingBooking)
+            {
+                throw new InvalidOperationException(
+                    "Room is no longer available for these dates.");
+            }
+
+            await _context.Bookings.AddAsync(booking);
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (PostgresException ex) when (IsSerializationFailure(ex))
+        {
+            throw CreateAvailabilityConflictException(ex);
+        }
+        catch (DbUpdateException ex) when (IsSerializationFailure(ex))
+        {
+            throw CreateAvailabilityConflictException(ex);
+        }
     }
 
     public async Task UpdateAsync(Booking booking)
@@ -66,38 +99,63 @@ public class BookingRepository : IBookingRepository
     {
         return await _context.Bookings.AnyAsync(b =>
             b.RoomId == roomId &&
-            b.Status == BookingStatus.Approved &&
+            (b.Status == BookingStatus.Submitted ||
+             b.Status == BookingStatus.Approved) &&
             b.CheckIn < checkOut &&
             b.CheckOut > checkIn);
     }
 
     public async Task<bool> ApproveAsync(Guid bookingId)
     {
-        await using var transaction = await _context.Database
-            .BeginTransactionAsync(IsolationLevel.Serializable);
+        try
+        {
+            await using var transaction = await _context.Database
+                .BeginTransactionAsync(IsolationLevel.Serializable);
 
-        var booking = await _context.Bookings
-            .FirstOrDefaultAsync(b => b.Id == bookingId);
+            var booking = await _context.Bookings
+                .FirstOrDefaultAsync(b => b.Id == bookingId);
 
-        if (booking == null)
-            return false;
+            if (booking == null)
+                return false;
 
-        var isBooked = await _context.Bookings.AnyAsync(b =>
-            b.Id != bookingId &&
-            b.RoomId == booking.RoomId &&
-            b.Status == BookingStatus.Approved &&
-            b.CheckIn < booking.CheckOut &&
-            b.CheckOut > booking.CheckIn);
+            await _context.Entry(booking).ReloadAsync();
 
-        if (isBooked)
-            return false;
+            if (booking.Status != BookingStatus.Submitted)
+                return false;
 
-        booking.Status = BookingStatus.Approved;
+            var roomIsActive = await _context.Rooms
+                .AnyAsync(r => r.Id == booking.RoomId && r.IsActive);
 
-        await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
+            var hasConflictingBooking = await _context.Bookings
+                .AnyAsync(b =>
+                    b.Id != bookingId &&
+                    b.RoomId == booking.RoomId &&
+                    (b.Status == BookingStatus.Submitted ||
+                     b.Status == BookingStatus.Approved) &&
+                    b.CheckIn < booking.CheckOut &&
+                    b.CheckOut > booking.CheckIn);
 
-        return true;
+            if (!roomIsActive || hasConflictingBooking)
+            {
+                throw new InvalidOperationException(
+                    "Room is no longer available for this booking.");
+            }
+
+            booking.Status = BookingStatus.Approved;
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return true;
+        }
+        catch (PostgresException ex) when (IsSerializationFailure(ex))
+        {
+            throw CreateAvailabilityConflictException(ex);
+        }
+        catch (DbUpdateException ex) when (IsSerializationFailure(ex))
+        {
+            throw CreateAvailabilityConflictException(ex);
+        }
     }
 
     public async Task<int> CountAsync(BookingStatus? status = null)
@@ -183,6 +241,20 @@ public class BookingRepository : IBookingRepository
             .Include(b => b.Hotel)
             .Include(b => b.Room)
                 .ThenInclude(r => r.RoomType);
+    }
+
+    private static bool IsSerializationFailure(Exception exception)
+    {
+        return exception.GetBaseException() is PostgresException postgresException &&
+               postgresException.SqlState == PostgresErrorCodes.SerializationFailure;
+    }
+
+    private static InvalidOperationException CreateAvailabilityConflictException(
+        Exception exception)
+    {
+        return new InvalidOperationException(
+            "Room availability changed during the operation. Please try again.",
+            exception);
     }
 
 }

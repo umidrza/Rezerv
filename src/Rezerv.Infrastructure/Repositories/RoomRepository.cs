@@ -34,13 +34,14 @@ public class RoomRepository : IRoomRepository
         if (!room)
             return false;
 
-        var hasApprovedBooking = await _context.Bookings
+        var hasBlockingBooking = await _context.Bookings
             .AnyAsync(b =>
                 b.RoomId == roomId &&
-                b.Status == BookingStatus.Approved &&
+                (b.Status == BookingStatus.Submitted ||
+                 b.Status == BookingStatus.Approved) &&
                 b.CheckIn < checkOut &&
                 b.CheckOut > checkIn);
 
-        return !hasApprovedBooking;
+        return !hasBlockingBooking;
     }
 }
