@@ -53,14 +53,12 @@ public class BookingsController : ApiControllerBase
 
     [HttpGet("check-availability")]
     public async Task<IActionResult> CheckRoomAvailability(
-        [FromQuery] Guid roomId,
-        [FromQuery] DateTime checkIn,
-        [FromQuery] DateTime checkOut)
+        [FromQuery] CheckRoomAvailabilityDto request)
     {
         var isAvailable = await _bookingService.CheckRoomAvailabilityAsync(
-            roomId,
-            checkIn,
-            checkOut);
+            request.RoomId,
+            request.CheckIn,
+            request.CheckOut);
 
         return Ok(new { isAvailable });
     }

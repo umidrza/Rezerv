@@ -14,13 +14,16 @@ namespace Rezerv.Infrastructure.Services;
 public class AuthService : IAuthService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly JwtSettings _jwtSettings;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
         IOptions<JwtSettings> jwtOptions)
     {
         _userManager = userManager;
+        _signInManager = signInManager;
         _jwtSettings = jwtOptions.Value;
     }
 
@@ -50,11 +53,18 @@ public class AuthService : IAuthService
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
 
-        if (user == null ||
-            !await _userManager.CheckPasswordAsync(user, dto.Password))
+        if (user == null)
         {
             throw new UnauthorizedAccessException("Invalid email or password.");
         }
+
+        var result = await _signInManager.CheckPasswordSignInAsync(
+            user,
+            dto.Password,
+            lockoutOnFailure: true);
+
+        if (!result.Succeeded)
+            throw new UnauthorizedAccessException("Invalid email or password.");
 
         return await GenerateTokenAsync(user);
     }
