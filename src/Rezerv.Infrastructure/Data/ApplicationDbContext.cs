@@ -20,6 +20,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<HotelManager> HotelManagers { get; set; }
     public DbSet<HotelImage> HotelImages { get; set; }
     public DbSet<HotelReview> HotelReviews { get; set; }
+    public DbSet<HotelFavorite> HotelFavorites { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -108,6 +109,19 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(r => new { r.HotelId, r.UserId })
+                .IsUnique();
+        });
+
+        modelBuilder.Entity<HotelFavorite>(entity =>
+        {
+            entity.HasKey(f => f.Id);
+
+            entity.HasOne(f => f.Hotel)
+                .WithMany(h => h.Favorites)
+                .HasForeignKey(f => f.HotelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(f => new { f.UserId, f.HotelId })
                 .IsUnique();
         });
     }

@@ -93,6 +93,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IHotelReviewRepository, HotelReviewRepository>();
 builder.Services.AddScoped<IHotelReviewService, HotelReviewService>();
+builder.Services.AddScoped<IHotelFavoriteRepository, HotelFavoriteRepository>();
+builder.Services.AddScoped<IHotelFavoriteService, HotelFavoriteService>();
 
 var app = builder.Build();
 

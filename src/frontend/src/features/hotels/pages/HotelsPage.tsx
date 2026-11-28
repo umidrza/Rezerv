@@ -1,13 +1,93 @@
+import { useEffect, useRef, useState } from "react";
+
 import HotelCard from "../components/HotelCard";
 import HotelSearchForm from "../components/HotelSearchForm";
 import { useHotelSearch } from "../hooks/useHotelSearch";
+import { useAuth } from "../../auth/AuthContext";
+import {
+  getMyFavorites,
+  addFavorite,
+  removeFavorite,
+} from "../../../services/hotelFavoriteService";
 
 export default function HotelsPage() {
   const search = useHotelSearch();
+  const { token, isCustomer } = useAuth();
+
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteLoadingId, setFavoriteLoadingId] = useState<string | null>(
+    null,
+  );
+  const [favoriteError, setFavoriteError] = useState("");
+
+  const hotelsSectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    search.loadHotels(1);
+  }, []);
+
+  useEffect(() => {
+    if (!token || !isCustomer) {
+      setFavoriteIds(new Set());
+      return;
+    }
+
+    getMyFavorites(token)
+      .then((favorites) => {
+        setFavoriteIds(new Set(favorites.map((hotel) => hotel.id)));
+      })
+      .catch((err) => {
+        setFavoriteError(
+          err instanceof Error ? err.message : "Failed to load favorites.",
+        );
+      });
+  }, [token, isCustomer]);
+
+  async function handleToggleFavorite(hotelId: string) {
+    if (!token || favoriteLoadingId) return;
+
+    const currentlyFavorite = favoriteIds.has(hotelId);
+
+    setFavoriteLoadingId(hotelId);
+    setFavoriteError("");
+
+    try {
+      if (currentlyFavorite) {
+        await removeFavorite(hotelId, token);
+      } else {
+        await addFavorite(hotelId, token);
+      }
+
+      setFavoriteIds((previous) => {
+        const updated = new Set(previous);
+
+        if (currentlyFavorite) {
+          updated.delete(hotelId);
+        } else {
+          updated.add(hotelId);
+        }
+
+        return updated;
+      });
+    } catch (err) {
+      setFavoriteError(
+        err instanceof Error ? err.message : "Failed to update favorites.",
+      );
+    } finally {
+      setFavoriteLoadingId(null);
+    }
+  }
 
   function handleSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     search.loadHotels(1);
+
+    setTimeout(() => {
+      hotelsSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
   }
 
   return (
@@ -42,26 +122,32 @@ export default function HotelsPage() {
         />
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-12">
+      <section className="mx-auto max-w-6xl px-6 py-12" ref={hotelsSectionRef}>
         <h2 className="mb-6 text-2xl font-bold text-slate-900">
-          {search.hotels.length > 0 ? "Search results" : "Discover hotels"}
+          Discover hotels
         </h2>
 
-        {search.error && (
+        {(search.error || favoriteError) && (
           <p className="mb-6 rounded-lg bg-red-100 p-4 text-red-700">
-            {search.error}
+            {search.error || favoriteError}
           </p>
         )}
 
         {!search.loading && search.hotels.length === 0 && !search.error && (
-          <p className="text-slate-500">
-            Search for hotels to see available results.
-          </p>
+          <p className="text-slate-500">No hotels found.</p>
         )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {search.hotels.map((hotel) => (
-            <HotelCard key={hotel.id} hotel={hotel} />
+            <HotelCard
+              key={hotel.id}
+              hotel={hotel}
+              isFavorite={favoriteIds.has(hotel.id)}
+              onToggleFavorite={
+                isCustomer ? () => handleToggleFavorite(hotel.id) : undefined
+              }
+              favoriteLoading={favoriteLoadingId === hotel.id}
+            />
           ))}
         </div>
 

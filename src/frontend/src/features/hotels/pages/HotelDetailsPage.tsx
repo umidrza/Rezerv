@@ -1,10 +1,18 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { Heart } from "lucide-react";
 
 import { useAuth } from "../../auth/AuthContext";
 
 import { useHotelDetails } from "../hooks/useHotelDetails";
 import { useHotelBooking } from "../hooks/useHotelBooking";
 import { useHotelReviews } from "../hooks/useHotelReviews";
+
+import {
+  addFavorite,
+  isFavorite as checkIsFavorite,
+  removeFavorite,
+} from "../../../services/hotelFavoriteService";
 
 import HotelHeader from "../components/HotelHeader";
 import HotelRoomList from "../components/HotelRoomList";
@@ -24,6 +32,41 @@ export default function HotelDetailsPage() {
   const { token, isAuthenticated, isCustomer } = useAuth();
 
   const { hotel, roomTypes, loading, error: hotelError } = useHotelDetails(id);
+
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [favoriteError, setFavoriteError] = useState("");
+
+  useEffect(() => {
+    if (!token || !isCustomer || !id) return;
+
+    checkIsFavorite(id, token)
+      .then(setIsFavorite)
+      .catch(() => setFavoriteError("Failed to load favorite status."));
+  }, [id, token, isCustomer]);
+
+  async function handleToggleFavorite() {
+    if (!token || !id || favoriteLoading) return;
+
+    setFavoriteLoading(true);
+    setFavoriteError("");
+
+    try {
+      if (isFavorite) {
+        await removeFavorite(id, token);
+        setIsFavorite(false);
+      } else {
+        await addFavorite(id, token);
+        setIsFavorite(true);
+      }
+    } catch (error) {
+      setFavoriteError(
+        error instanceof Error ? error.message : "Failed to update favorite.",
+      );
+    } finally {
+      setFavoriteLoading(false);
+    }
+  }
 
   const {
     reviews,
@@ -92,9 +135,12 @@ export default function HotelDetailsPage() {
           primaryImageUrl={hotel.primaryImageUrl ?? null}
         />
 
-        <div className="mt-6">
-          <HotelHeader hotel={hotel} />
-        </div>
+        <HotelHeader
+          hotel={hotel}
+          isFavorite={isFavorite}
+          onToggleFavorite={isCustomer ? handleToggleFavorite : undefined}
+          favoriteLoading={favoriteLoading}
+        />
 
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
           <HotelRoomList

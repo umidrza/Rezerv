@@ -241,6 +241,31 @@ namespace Rezerv.Infrastructure.Data.Migrations
                     b.ToTable("Hotels");
                 });
 
+            modelBuilder.Entity("Rezerv.Domain.Entities.HotelFavorite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("HotelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HotelId");
+
+                    b.HasIndex("UserId", "HotelId")
+                        .IsUnique();
+
+                    b.ToTable("HotelFavorites");
+                });
+
             modelBuilder.Entity("Rezerv.Domain.Entities.HotelImage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -520,6 +545,17 @@ namespace Rezerv.Infrastructure.Data.Migrations
                     b.Navigation("PrimaryImage");
                 });
 
+            modelBuilder.Entity("Rezerv.Domain.Entities.HotelFavorite", b =>
+                {
+                    b.HasOne("Rezerv.Domain.Entities.Hotel", "Hotel")
+                        .WithMany("Favorites")
+                        .HasForeignKey("HotelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Hotel");
+                });
+
             modelBuilder.Entity("Rezerv.Domain.Entities.HotelImage", b =>
                 {
                     b.HasOne("Rezerv.Domain.Entities.Hotel", "Hotel")
@@ -577,6 +613,8 @@ namespace Rezerv.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Rezerv.Domain.Entities.Hotel", b =>
                 {
+                    b.Navigation("Favorites");
+
                     b.Navigation("HotelManagers");
 
                     b.Navigation("Images");

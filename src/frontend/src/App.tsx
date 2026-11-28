@@ -14,6 +14,7 @@ import MyBookingsPage from "./features/bookings/pages/MyBookingsPage";
 import BookingDetailsPage from "./features/bookings/pages/BookingDetailsPage";
 import HotelBookingsPage from "./features/bookings/pages/HotelBookingsPage";
 import RoomManagementPage from "./features/hotels/pages/RoomManagementPage";
+import MyFavoritesPage from "./features/hotels/pages/MyFavoritesPage";
 
 import NotFoundPage from "./pages/NotFoundPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -39,6 +40,7 @@ export default function App() {
           {/* Customer only */}
           <Route element={<ProtectedRoute allowedRoles={["Customer"]} />}>
             <Route path="/my-bookings" element={<MyBookingsPage />} />
+            <Route path="/my-favorites" element={<MyFavoritesPage />} />
           </Route>
 
           {/* Admin and HotelManager */}

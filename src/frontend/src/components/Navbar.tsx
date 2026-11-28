@@ -36,12 +36,21 @@ export default function Navbar() {
               </Link>
 
               {isCustomer && (
-                <Link
-                  to="/my-bookings"
-                  className="text-sm font-medium text-slate-700 hover:text-orange-500"
-                >
-                  My Bookings
-                </Link>
+                <>
+                  <Link
+                    to="/my-bookings"
+                    className="text-sm font-medium text-slate-700 hover:text-orange-500"
+                  >
+                    My Bookings
+                  </Link>
+
+                  <Link
+                    to="/my-favorites"
+                    className="text-sm font-medium text-slate-700 hover:text-orange-500"
+                  >
+                    My Favorites
+                  </Link>
+                </>
               )}
 
               {(isAdmin || isHotelManager) && (
